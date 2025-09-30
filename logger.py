@@ -20,6 +20,7 @@ from .handlers.cloud.datadog import DatadogHandler
 from .handlers.cloud.aws import AWSCloudWatchHandler
 from .handlers.cloud.gcp import GCPLoggingHandler
 from .handlers.cloud.azure import AzureLogAnalyticsHandler
+from .configs.console import ConsoleLogConfig
 
 
 class DomoLogger:
@@ -204,8 +205,7 @@ def get_logger(app_name: str = "domolibrary") -> DomoLogger:
     """Get or create the global logger instance"""
     global _global_logger
     if _global_logger is None:
-        from .configs.cloud import AzureLogAnalyticsConfig
-        config = AzureLogAnalyticsConfig.from_env()
+        config = ConsoleLogConfig(level=LogLevel.INFO, pretty_print=False)
         _global_logger = DomoLogger(config, app_name)
     return _global_logger
 
