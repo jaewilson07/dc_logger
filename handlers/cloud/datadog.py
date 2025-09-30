@@ -1,6 +1,7 @@
 import asyncio
 import socket
-from typing import List
+import json
+from typing import List, Any, Dict
 import concurrent.futures
 
 from .base import CloudHandler
@@ -45,6 +46,43 @@ class DatadogHandler(CloudHandler):
         }
         return level_mapping.get(level, "info")
 
+    def _safe_serialize(self, obj: Any) -> Any:
+        """Safely serialize objects for JSON, handling complex types"""
+        if obj is None:
+            return None
+        
+        # Handle basic JSON-serializable types
+        if isinstance(obj, (str, int, float, bool)):
+            return obj
+        
+        # Handle lists
+        if isinstance(obj, list):
+            return [self._safe_serialize(item) for item in obj]
+        
+        # Handle dictionaries
+        if isinstance(obj, dict):
+            return {key: self._safe_serialize(value) for key, value in obj.items()}
+        
+        # Handle objects with to_dict method
+        if hasattr(obj, 'to_dict') and callable(getattr(obj, 'to_dict')):
+            try:
+                return self._safe_serialize(obj.to_dict())
+            except:
+                return str(obj)
+        
+        # Handle objects with __dict__
+        if hasattr(obj, '__dict__'):
+            try:
+                return self._safe_serialize(obj.__dict__)
+            except:
+                return str(obj)
+        
+        # Fallback to string representation, truncated for large objects
+        str_repr = str(obj)
+        if len(str_repr) > 1000:
+            return str_repr[:1000] + "... (truncated)"
+        return str_repr
+
     def _send_logs_simple_api(self, entries: List[LogEntry]) -> bool:
         """Send logs using direct HTTP requests to Datadog"""
         try:
@@ -77,9 +115,9 @@ class DatadogHandler(CloudHandler):
                     "timestamp": entry.timestamp,
                 }
 
-                # Add structured data
+                # Add structured data with safe serialization
                 if entry.entity:
-                    log_data["entity"] = entry.entity.__dict__
+                    log_data["entity"] = self._safe_serialize(entry.entity)
 
                 if entry.correlation:
                     log_data["correlation"] = {
@@ -101,21 +139,36 @@ class DatadogHandler(CloudHandler):
                         "method": entry.http_details.method,
                         "url": entry.http_details.url,
                         "status_code": entry.http_details.status_code,
+                        "params": self._safe_serialize(entry.http_details.params),
+                        "request_body": self._safe_serialize(entry.http_details.request_body),
+                        "response_body": entry.http_details.response_body if isinstance(entry.http_details.response_body, (str, int, float, bool, type(None))) else str(entry.http_details.response_body)[:500],
+                        "response_size": entry.http_details.response_size,
                     }
 
                 if entry.extra:
-                    log_data.update(entry.extra)
+                    log_data["extra"] = self._safe_serialize(entry.extra)
 
                 logs_data.append(log_data)
 
             # Send via HTTP POST
             headers = {"Content-Type": "application/json", "DD-API-KEY": api_key}
 
+            # Debug: Print first log entry for troubleshooting
+            if logs_data:
+                print(f"DatadogHandler: Sending {len(logs_data)} log entries to {intake_url}")
+                # Print a sample of the first log entry (truncated for readability)
+                sample_log = logs_data[0].copy()
+                if len(str(sample_log)) > 500:
+                    print(f"DatadogHandler: Sample log entry: {str(sample_log)[:500]}...")
+                else:
+                    print(f"DatadogHandler: Sample log entry: {sample_log}")
+
             response = requests.post(
                 intake_url, json=logs_data, headers=headers, timeout=10
             )
 
             if response.status_code in [200, 202]:
+                print(f"DatadogHandler: Successfully sent {len(logs_data)} log entries to Datadog")
                 return True
             else:
                 print(
@@ -123,6 +176,10 @@ class DatadogHandler(CloudHandler):
                 )
                 return False
 
+        except (TypeError, ValueError) as e:
+            print(f"DatadogHandler: JSON serialization error - {e}")
+            print(f"DatadogHandler: Problematic data: {logs_data}")
+            return False
         except Exception as e:
             print(f"DatadogHandler: Failed to send logs - {e}")
             return False

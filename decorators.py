@@ -7,7 +7,7 @@ from functools import wraps
 
 from .client.enums import LogLevel
 from .client.models import LogEntry, Entity, HTTPDetails, Correlation, MultiTenant
-from .utils import extract_entity_from_args
+from .utils import extract_entity_from_args, _find_calling_context, create_dynamic_action_name
 
 
 def log_function_call(
@@ -109,8 +109,9 @@ def log_function_call(
             headers = kwargs.get("headers", {})
             body = kwargs.get("body")
 
-            # Extract entity information using the helper function
-            entity = extract_entity_from_args(args, kwargs)
+            # Extract entity information and calling context
+            calling_context = _find_calling_context()
+            entity = calling_context.get('entity') or extract_entity_from_args(args, kwargs)
 
             # Start request context (inherit trace_id from parent if available)
             request_id = log.start_request(auth=auth)
@@ -183,7 +184,7 @@ def log_function_call(
 
             # Prepare function context
             func_context = {
-                "action": action_name or function_name,
+                "action": create_dynamic_action_name(action_name or function_name, calling_context),
                 "entity": entity,
                 "correlation": correlation_obj,
                 "multi_tenant": multi_tenant,
@@ -290,7 +291,7 @@ def log_function_call(
                 # Log based on whether this is an HTTP error or success
                 if is_http_error:
                     await log.error(
-                        f"Function {function_name} completed with HTTP error {status_code}",
+                        f"Function {create_dynamic_action_name(action_name or function_name, calling_context)} completed with HTTP error {status_code}",
                         logger=f"domolibrary.{func.__module__}",
                         **func_context,
                         **result_context,
@@ -298,7 +299,7 @@ def log_function_call(
                     )
                 else:
                     await log.info(
-                        f"Function {function_name} completed successfully",
+                        f"Function {create_dynamic_action_name(action_name or function_name, calling_context)} completed successfully",
                         logger=f"domolibrary.{func.__module__}",
                         **func_context,
                         **result_context,
@@ -330,7 +331,7 @@ def log_function_call(
                     "async_call": True,
                 }
                 await log.error(
-                    f"Function {function_name} failed: {str(e)}",
+                    f"Function {create_dynamic_action_name(action_name or function_name, calling_context)} failed: {str(e)}",
                     logger=f"domolibrary.{func.__module__}",
                     **func_context,
                     duration_ms=duration_ms,
@@ -369,8 +370,9 @@ def log_function_call(
             headers = kwargs.get("headers", {})
             body = kwargs.get("body")
 
-            # Extract entity information using the helper function
-            entity = extract_entity_from_args(args, kwargs)
+            # Extract entity information and calling context
+            calling_context = _find_calling_context()
+            entity = calling_context.get('entity') or extract_entity_from_args(args, kwargs)
 
             # Start request context (inherit trace_id from parent if available)
             request_id = log.start_request(auth=auth)
@@ -443,7 +445,7 @@ def log_function_call(
 
             # Prepare function context
             func_context = {
-                "action": action_name or function_name,
+                "action": create_dynamic_action_name(action_name or function_name, calling_context),
                 "entity": entity,
                 "correlation": correlation_obj,
                 "multi_tenant": multi_tenant,

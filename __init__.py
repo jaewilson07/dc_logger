@@ -32,6 +32,8 @@ from .configs import (
     create_file_config,
     create_console_file_config,
     create_console_datadog_config,
+    create_console_file_datadog_config,
+    create_file_datadog_config,
 )
 from .decorators import log_function_call
 from .utils import extract_entity_from_args
@@ -67,6 +69,8 @@ __all__ = [
     'create_file_config',
     'create_console_file_config',
     'create_console_datadog_config',
+    'create_console_file_datadog_config',
+    'create_file_datadog_config',
     
     # Decorators and utilities
     'log_function_call',

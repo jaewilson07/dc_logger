@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .base import LogConfig
 from .console import ConsoleLogConfig
@@ -29,14 +29,8 @@ class HandlerConfig:
 class MultiHandler_LogConfig(LogConfig):
     """Configuration that supports multiple handlers simultaneously"""
 
-    handlers: List[HandlerConfig]
+    handlers: List[HandlerConfig] = field(default_factory=list)
     output_mode: str = "multi"
-    level: LogLevel = LogLevel.INFO
-    batch_size: int = 100
-    flush_interval: int = 30
-    correlation_enabled: bool = True
-    include_traceback: bool = True
-    max_buffer_size: int = 1000
 
     def get_cloud_config(self) -> Dict[str, Any]:
         """Return empty config since this handles multiple providers"""

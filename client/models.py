@@ -17,10 +17,16 @@ class Entity:
     parent: Any = None  # instance of a class
 
     def get_additional_info(self, info_fn: Callable = None):
+        """Populate additional_info when we don't have a full parent object"""
         if info_fn:
             self.additional_info = info_fn(self)
             return self.additional_info
 
+        # Only populate additional_info if we don't have a parent object
+        # This avoids duplication - use parent for full objects, additional_info for context
+        if self.parent:
+            return self.additional_info
+            
         additional_info = {}
         if hasattr(self.parent, "description"):
             additional_info["description"] = getattr(self.parent, "description", "")
@@ -41,6 +47,126 @@ class Entity:
 
         self.additional_info = additional_info
         return self.additional_info
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Entity to dictionary for JSON serialization"""
+        parent_dict = None
+        if self.parent:
+            parent_dict = self._serialize_parent(self.parent)
+        
+        result = {
+            "type": self.type,
+            "id": self.id,
+            "name": self.name,
+        }
+        
+        # Include parent if we have a full object, otherwise include additional_info for context
+        if parent_dict:
+            result["parent"] = parent_dict
+        elif self.additional_info:
+            result["additional_info"] = self.additional_info
+            
+        return result
+
+    def _serialize_parent(self, parent) -> Dict[str, Any]:
+        """Safely serialize parent object to dictionary"""
+        if parent is None:
+            return None
+        
+        # If parent has a to_dict method, use it
+        if hasattr(parent, 'to_dict') and callable(getattr(parent, 'to_dict')):
+            try:
+                parent_dict = parent.to_dict()
+                # Add metadata about the parent object
+                parent_dict['_metadata'] = {
+                    "class_name": type(parent).__name__,
+                    "module": getattr(type(parent), '__module__', 'unknown')
+                }
+                return parent_dict
+            except Exception as e:
+                # If to_dict fails, fall back to manual extraction
+                pass
+        
+        # Extract key attributes from parent object
+        parent_info = {
+            "_metadata": {
+                "class_name": type(parent).__name__,
+                "module": getattr(type(parent), '__module__', 'unknown')
+            }
+        }
+        
+        # Common attributes to extract from Domo entities
+        common_attrs = [
+            'id', 'name', 'display_name', 'description', 'owner', 
+            'display_type', 'data_provider_type', 'row_count', 'column_count',
+            'created_dt', 'last_updated_dt', 'last_touched_dt',
+            'stream_id', 'cloud_id', 'formula', 'status'
+        ]
+        
+        for attr in common_attrs:
+            if hasattr(parent, attr):
+                value = getattr(parent, attr, None)
+                if value is not None:
+                    # Handle datetime objects
+                    if hasattr(value, 'isoformat'):
+                        parent_info[attr] = value.isoformat()
+                    # Handle simple types
+                    elif isinstance(value, (str, int, float, bool)):
+                        parent_info[attr] = value
+                    # Handle dictionaries
+                    elif isinstance(value, dict):
+                        parent_info[attr] = value
+                    # Handle lists (but limit size)
+                    elif isinstance(value, list) and len(value) < 10:
+                        parent_info[attr] = value
+                    # Convert complex objects to string representation (truncated)
+                    else:
+                        str_value = str(value)
+                        if len(str_value) > 200:
+                            parent_info[attr] = str_value[:200] + "... (truncated)"
+                        else:
+                            parent_info[attr] = str_value
+        
+        # Extract auth information if available
+        if hasattr(parent, 'auth') and parent.auth:
+            auth_info = {}
+            if hasattr(parent.auth, 'domo_instance'):
+                auth_info['domo_instance'] = parent.auth.domo_instance
+            if hasattr(parent.auth, 'user_id'):
+                auth_info['user_id'] = parent.auth.user_id
+            if auth_info:
+                parent_info['auth'] = auth_info
+        
+        # If we didn't extract much useful info, include a summary
+        if len(parent_info) <= 1:  # Only metadata
+            parent_info['summary'] = str(parent)[:500] + ("..." if len(str(parent)) > 500 else "")
+        
+        # Special handling for common Domo classes that might not have to_dict
+        if hasattr(parent, '__class__'):
+            class_name = type(parent).__name__
+            if 'DomoDataset' in class_name:
+                # Extract specific DomoDataset attributes
+                dataset_attrs = [
+                    'id', 'name', 'description', 'owner', 'display_type', 'data_provider_type',
+                    'row_count', 'column_count', 'stream_id', 'cloud_id', 'created_dt', 
+                    'last_updated_dt', 'last_touched_dt'
+                ]
+                for attr in dataset_attrs:
+                    if hasattr(parent, attr) and attr not in parent_info:
+                        value = getattr(parent, attr, None)
+                        if value is not None:
+                            if hasattr(value, 'isoformat'):
+                                parent_info[attr] = value.isoformat()
+                            elif isinstance(value, (str, int, float, bool, dict)):
+                                parent_info[attr] = value
+                            else:
+                                str_value = str(value)
+                                if len(str_value) > 200:
+                                    parent_info[attr] = str_value[:200] + "... (truncated)"
+                                else:
+                                    parent_info[attr] = str_value
+        
+        return parent_info
 
     @classmethod
     def from_domo_entity(cls, domo_entity, info_fn: Callable = None) -> "Entity":
@@ -84,6 +210,19 @@ class HTTPDetails:
     request_body: Optional[Any] = None
     response_body: Optional[Any] = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert HTTPDetails to dictionary for JSON serialization"""
+        return {
+            "method": self.method,
+            "url": self.url,
+            "status_code": self.status_code,
+            "headers": self.headers,
+            "params": self.params,
+            "response_size": self.response_size,
+            "request_body": self.request_body,
+            "response_body": self.response_body
+        }
+
 
 @dataclass
 class Correlation:
@@ -92,6 +231,14 @@ class Correlation:
     trace_id: Optional[str] = None
     span_id: Optional[str] = None
     parent_span_id: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Correlation to dictionary for JSON serialization"""
+        return {
+            "trace_id": self.trace_id,
+            "span_id": self.span_id,
+            "parent_span_id": self.parent_span_id
+        }
 
 
 @dataclass
@@ -102,6 +249,15 @@ class MultiTenant:
     session_id: Optional[str] = None
     tenant_id: Optional[str] = None
     organization_id: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert MultiTenant to dictionary for JSON serialization"""
+        return {
+            "user_id": self.user_id,
+            "session_id": self.session_id,
+            "tenant_id": self.tenant_id,
+            "organization_id": self.organization_id
+        }
 
 
 @dataclass
@@ -152,7 +308,7 @@ class LogEntry:
             "status": self.status,
             "duration_ms": self.duration_ms,
             # Entity (serialize if present)
-            "entity": self.entity.__dict__ if self.entity else None,
+            "entity": self.entity.to_dict() if self.entity else None,
             # Correlation (serialize if present)
             "correlation": self.correlation.__dict__ if self.correlation else None,
             # Multi-tenant (serialize if present)

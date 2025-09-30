@@ -20,8 +20,8 @@ class LogCloudConfig(LogConfig):
 class DatadogLogConfig(LogConfig):
     """Datadog-specific log configuration"""
 
-    api_key: Optional[str] = field(repr=False)
-    app_key: Optional[str] = field(repr=False)
+    api_key: Optional[str] = field(default=None, repr=False)
+    app_key: Optional[str] = field(default=None, repr=False)
 
     cloud_provider: str = "datadog"
     output_mode: OutputMode = "cloud"
@@ -50,8 +50,8 @@ class DatadogLogConfig(LogConfig):
 class AWSCloudWatchLogConfig(LogConfig):
     """AWS CloudWatch-specific log configuration"""
 
-    aws_region: str
-    log_group: str
+    aws_region: str = ""
+    log_group: str = ""
 
     cloud_provider: str = "aws"
     output_mode: OutputMode = "cloud"
@@ -78,7 +78,7 @@ class AWSCloudWatchLogConfig(LogConfig):
 class GCPLoggingConfig(LogConfig):
     """Google Cloud Logging-specific configuration"""
 
-    log_name: str
+    log_name: str = ""
 
     project_id: Optional[str] = None
 

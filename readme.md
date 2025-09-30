@@ -124,18 +124,7 @@ See [architecture.md](architecture.md) for detailed documentation.
 
 ## Configuration
 
-### Environment Variables
-
-For Azure Log Analytics (default):
-```bash
-AZURE_WORKSPACE_ID=workspace-id
-AZURE_SHARED_KEY=shared-key
-LOG_LEVEL=INFO
-LOG_BATCH_SIZE=100
-LOG_FLUSH_INTERVAL=30
-```
-
-### Factory Functions
+### Factory Functions for ease of use.
 
 - `create_console_config()` - Simple console logging
 - `create_file_config()` - File logging
@@ -188,9 +177,3 @@ LOG_FLUSH_INTERVAL=30
 5. Add tests for new functionality
 6. Update documentation
 
-## License
-
-
-## Support
-
-For issues, questions, or contributions, please [open an issue](your-repo-url).
