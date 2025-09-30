@@ -11,7 +11,7 @@ class CloudHandler(LogHandler):
 
     def __init__(self, config):
         super().__init__(config)
-        self.cloud_config = config.get_cloud_config()
+        self.cloud_config = config.to_platform_config()
         config.validate_config()
 
     @abstractmethod

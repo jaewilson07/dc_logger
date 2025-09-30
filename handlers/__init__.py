@@ -1,19 +1,28 @@
+"""Handlers module - Log output handlers for various destinations"""
+
 from .base import LogHandler
 from .console import ConsoleHandler
 from .file import FileHandler
-from .cloud.base import CloudHandler
-from .cloud.datadog import DatadogHandler
-from .cloud.aws import AWSCloudWatchHandler
-from .cloud.gcp import GCPLoggingHandler
-from .cloud.azure import AzureLogAnalyticsHandler
+from .cloud import (
+    CloudHandler,
+    DatadogHandler,
+    AWSCloudWatchHandler,
+    GCPLoggingHandler,
+    AzureLogAnalyticsHandler
+)
 
 __all__ = [
-    "LogHandler",
-    "ConsoleHandler",
-    "FileHandler",
-    "CloudHandler",
-    "DatadogHandler",
-    "AWSCloudWatchHandler",
-    "GCPLoggingHandler",
-    "AzureLogAnalyticsHandler",
+    # Base handler
+    'LogHandler',
+    
+    # Local handlers
+    'ConsoleHandler',
+    'FileHandler',
+    
+    # Cloud handlers
+    'CloudHandler',
+    'DatadogHandler',
+    'AWSCloudWatchHandler',
+    'GCPLoggingHandler',
+    'AzureLogAnalyticsHandler',
 ]

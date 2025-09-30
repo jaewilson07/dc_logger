@@ -1,7 +1,7 @@
 from typing import List
 from abc import ABC, abstractmethod
 
-from ..config.LogConfig import LogConfig
+from ..configs.base import LogConfig
 from ..client.models import LogEntry
 
 

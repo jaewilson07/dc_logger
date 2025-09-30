@@ -1,9 +1,9 @@
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-from .LogConfig import LogConfig
+from .base import LogConfig
 from .console import ConsoleLogConfig
-from .LogConfig_Cloud import DatadogLogConfig
+from .cloud import DatadogLogConfig
 from ..client.enums import LogLevel
 
 
@@ -14,16 +14,16 @@ class HandlerConfig:
     platform_config: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def from_config(cls, config:LogConfig):
-            hc= cls(
-                "type": config.output_mode,
-                "config": config,
-            )
+    def from_config(cls, config: LogConfig):
+        hc = cls(
+            type=config.output_mode,
+            config=config,
+        )
 
-            if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
-                hc.platform_config = config.to_platform_config()
+        if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
+            hc.platform_config = config.to_platform_config()
 
-            return hc
+        return hc
 
 @dataclass
 class MultiHandler_LogConfig(LogConfig):
@@ -56,7 +56,7 @@ class MultiHandler_LogConfig(LogConfig):
                 "type": handler.type,
                 "config": handler.config,
                 "cloud_config": (
-                    handler.config.get_cloud_config()
+                    handler.config.to_platform_config()
                     if handler.type == "cloud"
                     else None
                 ),

@@ -8,7 +8,8 @@ class AWSCloudWatchHandler(CloudHandler):
     """AWS CloudWatch log handler"""
 
     async def _send_to_cloud(self, entries: List[LogEntry]) -> bool:
-        # TODO: Implement AWS CloudWatch integration
-        # This would use boto3 to send logs to CloudWatch
+        """Send log entries to AWS CloudWatch"""
+        # TODO: Implement AWS CloudWatch integration using boto3
+
         print(f"AWS CloudWatch: Would send {len(entries)} log entries")
         return True

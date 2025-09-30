@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
 
 from abc import abstractmethod
-from .LogConfig import LogConfig, OutputMode
+from .base import LogConfig, OutputMode
 from ..client.exceptions import LogConfigError
 
 
@@ -85,7 +85,7 @@ class GCPLoggingConfig(LogConfig):
     output_mode: OutputMode = "cloud"
     cloud_provider: str = "gcp"
 
-    def to_cloud_config(self) -> Dict[str, Any]:
+    def to_platform_config(self) -> Dict[str, Any]:
         return {
             "project_id": self.project_id,
             "log_name": self.log_name,
@@ -112,7 +112,7 @@ class AzureLogAnalyticsConfig(LogConfig):
     output_mode: str = field(default="cloud", init=False)
     cloud_provider: str = field(default="azure", init=False)
 
-    def to_cloud_config(self) -> Dict[str, Any]:
+    def to_platform_config(self) -> Dict[str, Any]:
         return {
             "workspace_id": self.workspace_id,
             "shared_key": self.shared_key,
@@ -126,3 +126,22 @@ class AzureLogAnalyticsConfig(LogConfig):
         if not self.shared_key:
             raise LogConfigError("Azure shared key is required")
         return True
+
+    @classmethod
+    def from_env(cls) -> 'AzureLogAnalyticsConfig':
+        """Create Azure Log Analytics config from environment variables"""
+        from ..client.enums import LogLevel
+        
+        return cls(
+            workspace_id=os.getenv('AZURE_WORKSPACE_ID'),
+            shared_key=os.getenv('AZURE_SHARED_KEY'),
+            log_type=os.getenv('AZURE_LOG_TYPE', 'domolibrary'),
+            level=LogLevel.from_string(os.getenv('LOG_LEVEL', 'INFO')),
+            format=os.getenv('LOG_FORMAT', 'json'),
+            batch_size=int(os.getenv('LOG_BATCH_SIZE', '100')),
+            flush_interval=int(os.getenv('LOG_FLUSH_INTERVAL', '30')),
+            correlation_enabled=os.getenv('LOG_CORRELATION_ENABLED', 'true').lower() == 'true',
+            include_traceback=os.getenv('LOG_INCLUDE_TRACEBACK', 'true').lower() == 'true',
+            max_buffer_size=int(os.getenv('LOG_MAX_BUFFER_SIZE', '1000')),
+            pretty_print=os.getenv('LOG_PRETTY_PRINT', 'false').lower() == 'true',
+        )

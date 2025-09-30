@@ -1,31 +1,45 @@
-from .LogConfig import LogConfig
+"""Configuration module - Logger configurations for various platforms"""
+
+from .base import LogConfig
 from .console import ConsoleLogConfig
-from .LogConfig_Cloud import (
+from .cloud import (
+    LogCloudConfig,
     DatadogLogConfig,
     AWSCloudWatchLogConfig,
     GCPLoggingConfig,
-    AzureLogAnalyticsConfig,
+    AzureLogAnalyticsConfig
 )
-from .MultiHandler_LogConfig import (
-    MultiHandlerLogConfig,
-    HandlerConfig,
+from .multi_handler import MultiHandler_LogConfig, HandlerConfig
+from .factory import (
+    create_console_config,
+    create_file_config,
     create_console_file_config,
     create_console_datadog_config,
     create_console_file_datadog_config,
-    create_file_datadog_config,
+    create_file_datadog_config
 )
 
 __all__ = [
-    "LogConfig",
-    "ConsoleLogConfig",
-    "DatadogLogConfig",
-    "AWSCloudWatchLogConfig",
-    "GCPLoggingConfig",
-    "AzureLogAnalyticsConfig",
-    "MultiHandlerLogConfig",
-    "HandlerConfig",
-    "create_console_file_config",
-    "create_console_datadog_config",
-    "create_console_file_datadog_config",
-    "create_file_datadog_config",
+    # Base config
+    'LogConfig',
+    'ConsoleLogConfig',
+    
+    # Cloud configs
+    'LogCloudConfig',
+    'DatadogLogConfig',
+    'AWSCloudWatchLogConfig',
+    'GCPLoggingConfig',
+    'AzureLogAnalyticsConfig',
+    
+    # Multi-handler config
+    'MultiHandler_LogConfig',
+    'HandlerConfig',
+    
+    # Factory functions
+    'create_console_config',
+    'create_file_config',
+    'create_console_file_config',
+    'create_console_datadog_config',
+    'create_console_file_datadog_config',
+    'create_file_datadog_config',
 ]

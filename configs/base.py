@@ -1,7 +1,7 @@
 import os
 from typing import Optional, List, Dict, Any, Literal
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 
 from ..client.enums import LogLevel
 from ..client.exceptions import LogConfigError
@@ -31,14 +31,10 @@ class LogConfig(ABC):
         """Validate the configuration"""
         raise NotImplementedError()
 
-
-# hector -- does this make sense, or should it inherit LogConfig and not have a get_cloud_config method?
-@dataclass
-class ConsoleLogConfig(LogConfig):
-    """Console-specific log configuration"""
-
-    def to_platform_config(self) -> Dict[str, Any]:
-        return {"provider": "console"}
-
-    def validate_config(self) -> bool:
-        return True
+    def get_handler_configs(self) -> List[Dict[str, Any]]:
+        """Get handler configurations for this config. Default implementation returns single handler."""
+        return [{
+            "type": self.output_mode,
+            "config": self,
+            "cloud_config": self.to_platform_config() if self.output_mode == "cloud" else None
+        }]
