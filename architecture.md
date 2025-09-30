@@ -37,7 +37,7 @@ dc_logger/
 │       └── azure.py            # AzureLogAnalyticsHandler
 │
 ├── __init__.py                  # Package exports
-├── logger.py                    # Main DomoLogger class
+├── logger.py                    # Main DC_Logger class
 ├── decorators.py                # @log_function_call decorator
 ├── utils.py                     # Utility functions
 └── readme.md                    # Project documentation
@@ -49,7 +49,7 @@ dc_logger/
 
 1. **Single Responsibility Principle (SRP)**
    - Each class has one clear purpose
-   - `LogEntry` handles log data, `DomoLogger` handles logging operations
+   - `LogEntry` handles log data, `DC_Logger` handles logging operations
    - Handlers are responsible only for their specific output destination
 
 2. **Open/Closed Principle (OCP)**
@@ -66,12 +66,12 @@ dc_logger/
    - Cloud handlers extend base handler with cloud-specific methods
 
 5. **Dependency Inversion Principle (DIP)**
-   - `DomoLogger` depends on `LogHandler` abstraction, not concrete implementations
+   - `DC_Logger` depends on `LogHandler` abstraction, not concrete implementations
    - Configuration classes use abstract base for flexibility
 
 ### Naming Conventions
 
-- **Classes**: `PascalCase` (e.g., `DomoLogger`, `ConsoleHandler`)
+- **Classes**: `PascalCase` (e.g., `DC_Logger`, `ConsoleHandler`)
 - **Functions**: `snake_case` (e.g., `get_logger`, `create_console_config`)
 - **Constants**: `UPPER_SNAKE_CASE`
 - **Private methods**: Prefixed with `_` (e.g., `_setup_handlers`)
@@ -167,7 +167,7 @@ Convenience functions for common configurations:
 
 ### 4. Main Logger (`logger.py`)
 
-#### DomoLogger
+#### DC_Logger
 Main logger class with:
 - **Async-first design** with background flush task
 - **Buffer management** with configurable batch size
@@ -215,14 +215,14 @@ await logger.error("Something went wrong", extra={"error_code": 500})
 ### Console + File Logging
 
 ```python
-from dc_logger import DomoLogger, create_console_file_config
+from dc_logger import DC_Logger, create_console_file_config
 
 config = create_console_file_config(
     file_path="logs/app.log",
     level=LogLevel.INFO,
     pretty_print=True
 )
-logger = DomoLogger(config, "myapp")
+logger = DC_Logger(config, "myapp")
 
 await logger.info("Logging to both console and file")
 ```
@@ -230,14 +230,14 @@ await logger.info("Logging to both console and file")
 ### Datadog Integration
 
 ```python
-from dc_logger import DomoLogger, create_console_datadog_config
+from dc_logger import DC_Logger, create_console_datadog_config
 
 config = create_console_datadog_config(
     datadog_api_key="your-api-key",
     datadog_service="myapp",
     datadog_env="production"
 )
-logger = DomoLogger(config, "myapp")
+logger = DC_Logger(config, "myapp")
 
 await logger.info("Sent to both console and Datadog")
 ```
@@ -284,7 +284,7 @@ await logger.info(
 1. Create a new handler class inheriting from `LogHandler` or `CloudHandler`
 2. Implement required methods: `write()`, `flush()`, `close()`
 3. Add to `handlers/__init__.py` exports
-4. Update `DomoLogger._setup_handlers()` to support it
+4. Update `DC_Logger._setup_handlers()` to support it
 
 ### Adding a New Configuration
 

@@ -7,7 +7,11 @@ from functools import wraps
 
 from .client.enums import LogLevel
 from .client.models import LogEntry, Entity, HTTPDetails, Correlation, MultiTenant
-from .utils import extract_entity_from_args, _find_calling_context, create_dynamic_action_name
+from .utils import (
+    extract_entity_from_args,
+    _find_calling_context,
+    create_dynamic_action_name,
+)
 
 
 def log_function_call(
@@ -111,7 +115,9 @@ def log_function_call(
 
             # Extract entity information and calling context
             calling_context = _find_calling_context()
-            entity = calling_context.get('entity') or extract_entity_from_args(args, kwargs)
+            entity = calling_context.get("entity") or extract_entity_from_args(
+                args, kwargs
+            )
 
             # Start request context (inherit trace_id from parent if available)
             request_id = log.start_request(auth=auth)
@@ -184,7 +190,9 @@ def log_function_call(
 
             # Prepare function context
             func_context = {
-                "action": create_dynamic_action_name(action_name or function_name, calling_context),
+                "action": create_dynamic_action_name(
+                    action_name or function_name, calling_context
+                ),
                 "entity": entity,
                 "correlation": correlation_obj,
                 "multi_tenant": multi_tenant,
@@ -219,6 +227,9 @@ def log_function_call(
                 func_context["parameters"] = safe_kwargs
 
             try:
+                if not kwargs.get("logger"):
+                    kwargs.update({"logger": logger})
+
                 # Call the function
                 result = await func(*args, **kwargs)
 
@@ -372,7 +383,9 @@ def log_function_call(
 
             # Extract entity information and calling context
             calling_context = _find_calling_context()
-            entity = calling_context.get('entity') or extract_entity_from_args(args, kwargs)
+            entity = calling_context.get("entity") or extract_entity_from_args(
+                args, kwargs
+            )
 
             # Start request context (inherit trace_id from parent if available)
             request_id = log.start_request(auth=auth)
@@ -445,7 +458,9 @@ def log_function_call(
 
             # Prepare function context
             func_context = {
-                "action": create_dynamic_action_name(action_name or function_name, calling_context),
+                "action": create_dynamic_action_name(
+                    action_name or function_name, calling_context
+                ),
                 "entity": entity,
                 "correlation": correlation_obj,
                 "multi_tenant": multi_tenant,

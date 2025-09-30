@@ -44,14 +44,14 @@ asyncio.run(main())
 ### Console + File Logging
 
 ```python
-from dc_logger import DomoLogger, create_console_file_config, LogLevel
+from dc_logger import DC_Logger, create_console_file_config, LogLevel
 
 config = create_console_file_config(
     file_path="logs/app.log",
     level=LogLevel.INFO,
     pretty_print=True
 )
-logger = DomoLogger(config, "myapp")
+logger = DC_Logger(config, "myapp")
 
 await logger.info("Logging to both console and file")
 ```
@@ -59,14 +59,14 @@ await logger.info("Logging to both console and file")
 ### Datadog Integration
 
 ```python
-from dc_logger import DomoLogger, create_console_datadog_config
+from dc_logger import DC_Logger, create_console_datadog_config
 
 config = create_console_datadog_config(
     datadog_api_key="your-api-key",
     datadog_service="myapp",
     datadog_env="production"
 )
-logger = DomoLogger(config, "myapp")
+logger = DC_Logger(config, "myapp")
 
 await logger.info("Sent to both console and Datadog")
 ```
@@ -114,7 +114,7 @@ dc_logger/
 ├── configs/             # Configuration classes
 ├── handlers/            # Log output handlers
 │   └── cloud/          # Cloud platform integrations
-├── logger.py           # Main DomoLogger class
+├── logger.py           # Main DC_Logger class
 ├── decorators.py       # Decorator for automatic logging
 ├── utils.py            # Utility functions
 └── readme.md           # This file
@@ -155,7 +155,7 @@ See [architecture.md](architecture.md) for detailed documentation.
 
 ### Code Style
 
-- Classes: `PascalCase` (e.g., `DomoLogger`, `ConsoleHandler`)
+- Classes: `PascalCase` (e.g., `DC_Logger`, `ConsoleHandler`)
 - Functions: `snake_case` (e.g., `get_logger`, `create_console_config`)
 - Follow SOLID principles
 - Write clean, concise, readable code
