@@ -8,21 +8,6 @@ from ..base import LogHandler
 #| export
 
 
-@dataclass
-class HandlerConfig:
-    type: str
-    config: LogConfig
-    platform_config: Optional[Dict[str, Any]] = None
-
-    @classmethod
-    def from_config(cls, config: LogConfig):
-        hc = cls(
-            type=config.output_mode,
-            config=config,
-        )
-        if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
-            hc.platform_config = config.to_platform_config()
-        return hc
 
 
 @dataclass
