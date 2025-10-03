@@ -55,18 +55,23 @@ class ServiceHandler(ABC):
 
     service_config: Optional[ServiceConfig] = None # has authentication and connection details to service1
 
-    @classmethod
-    def from_config(cls, service_config: ServiceConfig):
+    # @classmethod
+    # def from_config(cls, service_config: ServiceConfig):
         
-        hc = cls(
-            service_config = service_config
+    #     hc = cls(
+    #         service_config = service_config
             
-        )
+    #     )
         
-        # if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
-        #     hc.platform_config = config.to_platform_config()
-        return hc
+    #     # if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
+    #     #     hc.platform_config = config.to_platform_config()
+    #     return hc
     
+    def validate_config(self) -> bool:
+        if not self.service_config:
+            raise ValueError("Service configuration is not set.")
+        
+        return self.service_config.validate_config()
 
     @abstractmethod
     async def write(self, entries: List[LogEntry]) -> bool:
@@ -137,6 +142,7 @@ class LogHandler(ABC):
 class Logger:
     """ should receive log entries and send them to all handlers.  handlers will use log_level and log_method to determine which logs to send"""
     handlers: List[LogHandler] = field(default_factory=list)
+    
     pretty_print: bool = False  # Pretty print JSON for development
 
 
@@ -146,4 +152,42 @@ class Logger:
                 return False
         return True
     
+    
+    # def get_cloud_config(self) -> Dict[str, Any]:
+    #     return {"cloud_provider": "multi"}
+
+    # def get_handler_configs(self) -> List[Dict[str, Any]]:
+    #     return [
+    #         {
+    #             "type": handler.type,
+    #             "config": handler.config,
+    #             "cloud_config": (
+    #                 handler.config.to_platform_config()
+    #                 if handler.type == "cloud"
+    #                 else None
+    #             ),
+    #         }
+    #         for handler in self.handlers
+    #     ]
+
+    # @classmethod
+    # def create(
+    #     cls,
+    #     handlers: List[Dict[str, Any]],
+    #     level: LogLevel = LogLevel.INFO,
+    #     batch_size: int = 100,
+    #     flush_interval: int = 30,
+    #     **kwargs
+    # ) -> "MultiHandlerLogConfig":
+    #     handler_configs = [
+    #         HandlerConfig(type=h["type"], config=h["config"]) for h in handlers
+    #     ]
+    #     return cls(
+    #         handlers=handler_configs,
+    #         level=level,
+    #         batch_size=batch_size,
+    #         flush_interval=flush_interval,
+    #         **kwargs
+    #     )
+
     
