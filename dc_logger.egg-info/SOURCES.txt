@@ -6,7 +6,6 @@ settings.ini
 setup.py
 dc_logger/__init__.py
 dc_logger/_modidx.py
-dc_logger/core.py
 dc_logger.egg-info/PKG-INFO
 dc_logger.egg-info/SOURCES.txt
 dc_logger.egg-info/dependency_links.txt
@@ -15,7 +14,16 @@ dc_logger.egg-info/not-zip-safe
 dc_logger.egg-info/requires.txt
 dc_logger.egg-info/top_level.txt
 dc_logger/client/__init__.py
-dc_logger/client/correlation.py
-dc_logger/client/enums.py
+dc_logger/client/base.py
 dc_logger/client/exceptions.py
-dc_logger/client/models.py
+dc_logger/configs/__init__.py
+dc_logger/configs/cloud.py
+dc_logger/configs/console.py
+dc_logger/logs/__init__.py
+dc_logger/logs/logs.py
+dc_logger/logs/tracing.py
+dc_logger/logs/services/__init__.py
+dc_logger/logs/services/cloud/__init__.py
+dc_logger/logs/services/cloud/datadog.py
+dc_logger/services/__init__.py
+dc_logger/services/base.py
