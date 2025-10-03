@@ -1,5 +1,5 @@
 """
-DomoLogger - Enhanced structured logging system
+DC_Logger - Enhanced structured logging system
 
 This is the main logger implementation that provides structured logging
 with support for multiple handlers, correlation tracking, and cloud integrations.
@@ -23,7 +23,7 @@ from .handlers.cloud.azure import AzureLogAnalyticsHandler
 from .configs.console import ConsoleLogConfig
 
 
-class DomoLogger:
+class DC_Logger:
     """Enhanced logger with structured logging and multiple handlers"""
 
     def __init__(self, config: LogConfig, app_name: str):
@@ -52,12 +52,12 @@ class DomoLogger:
         """Setup handlers based on configuration"""
         # Get handler configurations from the config
         handler_configs = self.config.get_handler_configs()
-        
+
         for handler_config in handler_configs:
             handler_type = handler_config["type"]
             config = handler_config["config"]
             cloud_config = handler_config.get("cloud_config")
-            
+
             if handler_type == "console":
                 self.handlers.append(ConsoleHandler(config))
             elif handler_type == "file":
@@ -74,7 +74,9 @@ class DomoLogger:
                     elif cloud_provider == "azure":
                         self.handlers.append(AzureLogAnalyticsHandler(config))
                     else:
-                        raise LogConfigError(f"Unknown cloud provider: {cloud_provider}")
+                        raise LogConfigError(
+                            f"Unknown cloud provider: {cloud_provider}"
+                        )
                 else:
                     raise LogConfigError("Cloud handler missing cloud_config")
             else:
@@ -85,12 +87,7 @@ class DomoLogger:
         if self.flush_task is None:
             self.flush_task = asyncio.create_task(self._periodic_flush())
 
-    async def log(
-        self,
-        level: LogLevel,
-        message: str,
-        **context
-    ) -> bool:
+    async def log(self, level: LogLevel, message: str, **context) -> bool:
         """Log a message with structured context"""
 
         # Check if we should log this level
@@ -109,19 +106,19 @@ class DomoLogger:
         entry = LogEntry.create(
             level=level,
             message=message,
-            logger=context.get('logger', f"domolibrary.{self.app_name}"),
-            user=context.get('user'),
-            action=context.get('action'),
-            entity=context.get('entity'),
-            status=context.get('status', 'info'),
-            duration_ms=context.get('duration_ms'),
+            logger=context.get("logger", f"domolibrary.{self.app_name}"),
+            user=context.get("user"),
+            action=context.get("action"),
+            entity=context.get("entity"),
+            status=context.get("status", "info"),
+            duration_ms=context.get("duration_ms"),
             trace_id=self.correlation_manager.trace_id_var.get(),
             request_id=self.correlation_manager.request_id_var.get(),
             session_id=self.correlation_manager.session_id_var.get(),
             correlation=self.correlation_manager.correlation_var.get(),
-            multi_tenant=context.get('multi_tenant'),
-            http_details=context.get('http_details'),
-            extra=context.get('extra', {}),
+            multi_tenant=context.get("multi_tenant"),
+            http_details=context.get("http_details"),
+            extra=context.get("extra", {}),
         )
 
         # Add to buffer
@@ -182,7 +179,7 @@ class DomoLogger:
     async def close(self):
         """Clean up resources"""
         # Cancel flush task
-        if hasattr(self, 'flush_task') and self.flush_task:
+        if hasattr(self, "flush_task") and self.flush_task:
             self.flush_task.cancel()
             try:
                 await self.flush_task
@@ -198,19 +195,20 @@ class DomoLogger:
 
 
 # Global logger instance
-_global_logger: Optional[DomoLogger] = None
+_global_logger: Optional[DC_Logger] = None
 
 
-def get_logger(app_name: str = "domolibrary") -> DomoLogger:
+def get_logger(app_name: str = "domolibrary") -> DC_Logger:
     """Get or create the global logger instance"""
     global _global_logger
     if _global_logger is None:
         config = ConsoleLogConfig(level=LogLevel.INFO, pretty_print=False)
         _global_logger = DomoLogger(config, app_name)
+
     return _global_logger
 
 
-def set_global_logger(logger: DomoLogger):
+def set_global_logger(logger: DC_Logger):
     """Set the global logger instance"""
     global _global_logger
     _global_logger = logger
