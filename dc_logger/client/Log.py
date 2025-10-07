@@ -337,7 +337,8 @@ class LogEntry:
                 if self.multi_tenant and self.multi_tenant.user_id
                 else None
             ),
-            "action": self.action,
+            "method" : self.method,
+             "action": self.action,
             "status": self.status,
             "duration_ms": self.duration_ms,
             "entity": self.entity.to_dict() if self.entity else None,
