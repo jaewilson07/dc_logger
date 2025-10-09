@@ -89,8 +89,8 @@ class ServiceHandler(ABC):
 
 # %% ../../nbs/client/base.ipynb 6
 @dataclass
-class HandlerInstance(ABC):
-    """defines when, how and where to send log entries"""
+class HandlerInstance:
+    """Wraps a ServiceHandler with filtering logic (log level and method filtering)"""
     
     service_handler: ServiceHandler
 
@@ -102,49 +102,40 @@ class HandlerInstance(ABC):
         default_factory=lambda: ["POST", "PUT", "DELETE", "PATCH", "COMMENT"]
     )
     # filtered list of API requests to log, generally won't log GET requests
-    # how can we capture general comment logging?
 
     def __post_init__(self):
+        if not self.handler_name:
+            self.handler_name = f"{self.service_handler.__class__.__name__}"
         self.validate_config()
 
-
-    async def validate_config(self) -> bool:
+    def validate_config(self) -> bool:
         """Validate the configuration"""
-
         if not self.service_handler:
             raise ValueError("must set a service handler")
         
-        if not self.log_config:
-            raise ValueError("must set a log configuration")
-        
-        is_valid_handler = self.service_handler.validate_config()
-
-        return is_valid_handler
+        return self.service_handler.validate_config()
     
+    async def write(self, entry: LogEntry) -> bool:
+        """Write log entry to destination with filtering"""
+        # Filter by log level
+        if entry.level.value < self.log_level.value:
+            return False
+            
+        # Filter by log method
+        if entry.method and entry.method not in self.log_method:
+            return False
+        
+        # Delegate to service handler
+        await self.service_handler.write([entry])
+        return True
 
-    async def write(self, entries: List[LogEntry]) -> bool:
-        """Write log entries to destination"""
-
-        """should handle log filtering (by min_level and log_method)"""
-
-        for entry in entries:
-            if entry.level < self.log_level:
-                continue
-            if entry.method not in self.log_method:
-                continue
-
-            self.service_handler.write(entry)  # may want to execute as a batch??
-
-
-
-    @abstractmethod
     async def flush(self) -> bool:
         """Flush any buffered entries"""
-        raise NotImplementedError()
+        return await self.service_handler.flush()
 
     async def close(self):
         """Clean up resources"""
-        raise NotImplementedError()
+        await self.service_handler.close()
 
 # %% ../../nbs/client/base.ipynb 7
 @dataclass 

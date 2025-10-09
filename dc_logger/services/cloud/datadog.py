@@ -3,11 +3,27 @@
 # %% auto 0
 __all__ = ['Datadog_ServiceConfig', 'DatadogHandler']
 
+# %% ../../../nbs/services/cloud/datadog.ipynb 1
+import asyncio
+import socket
+import json
+from dataclasses import dataclass, field
+from typing import List, Any, Dict,Optional
+import concurrent.futures
+
+from dc_logger.services.base import LogEntry
+from dc_logger.client.exceptions import LogHandlerError,LogConfigError
+from dc_logger.services.cloud.base import CloudHandler,CloudServiceConfig 
+from dc_logger.client.Log import LogLevel
+# from ...client.models import LogEntry
+# from ...client.enums import LogLevel
+# from ...client.exceptions import LogHandlerError
+
 # %% ../../../nbs/services/cloud/datadog.ipynb 2
 @dataclass
 class Datadog_ServiceConfig(CloudServiceConfig):
     """Datadog-specific log configuration"""
-    output_mode: OutputMode = "cloud"
+    output_mode: str =  "cloud"
     cloud_provider: str = "datadog"
     
     api_key: Optional[str] = field(default=None, repr=False)

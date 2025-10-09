@@ -67,28 +67,10 @@ class CorrelationManager:
         return uuid.uuid4().hex[:16]
 
     def generate_session_id(self) -> str:
-        """Generate a new session ID based on auth or create random"""
-        
-        # move to domolibrray
-        # if auth:
-        #     # Use auth instance and user info for session ID
-        #     user_id = (
-        #         getattr(auth, "user_id", None)
-        #         or getattr(auth, "user_name", None)
-        #         or getattr(auth, "username", None)
-        #     )
-        #     domo_instance = getattr(auth, "domo_instance", None)
-
-        #     if domo_instance and user_id:
-        #         return f"{domo_instance}_{user_id}"
-        #     elif domo_instance:
-        #         return f"{domo_instance}_anonymous"
-        #     elif user_id:
-        #         return f"unknown_{user_id}"
-        #     else:
-        #         return f"auth_{id(auth)}"
-        # else:
-        #     return uuid.uuid4().hex[:12]
+        """Generate a new session ID"""
+        # Simple random session ID
+        # Auth-based session ID generation can be implemented in domain-specific libraries
+        return uuid.uuid4().hex[:12]
 
     def start_request(
         self,
@@ -104,11 +86,8 @@ class CorrelationManager:
 
         request_id = self.generate_request_id()
 
-        # Generate session_id from auth if available, otherwise use existing or generate random
-        if auth and (hasattr(auth, "user_id") or hasattr(auth, "domo_instance")):
-            session_id = self.generate_session_id(auth)
-        else:
-            session_id = self.session_id_var.get() or self.generate_session_id(auth)
+        # Use existing session_id or generate new one
+        session_id = self.session_id_var.get() or self.generate_session_id()
         span_id = self.generate_span_id()
 
         # Handle parent span for pagination vs regular requests
@@ -154,7 +133,7 @@ class CorrelationManager:
             "request_id": self.request_id_var.get(),
             "session_id": self.session_id_var.get(),
             "span_id": self.span_id_var.get(),
-            "correlation": correlation.__dict__ if correlation else None,
+            "correlation": correlation,
         }
 
     def set_context_value(self, key: str, value: Any):
