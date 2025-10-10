@@ -22,7 +22,7 @@ from dataclasses import dataclass
 class File_ServiceConfig(ServiceConfig):
     """Configuration for file-based logging output"""
     destination: str
-    output_mode: Literal["File"] = "File"
+    output_mode: Literal["file"] = "file"
     format: Literal["json", "text", "csv"] = "text"
     append: bool = True  # optional flag for overwrite or append
 
@@ -35,15 +35,18 @@ class File_ServiceConfig(ServiceConfig):
 
 
 # %% ../../../nbs/services/file/base.ipynb 4
+from ...client.base import Handler_BufferSettings
+from typing import List
+
+@dataclass
 class FileHandler(ServiceHandler):
     """Handler for file output"""
 
-    def __init__(self, service_config: File_ServiceConfig):
-        super().__init__(service_config)
-        service_config.validate_config()
-
-        self.file_path = service_config.destination
-        self.append_mode = "a" if service_config.append else "w"
+    def __post_init__(self):
+        """Initialize file handler after dataclass initialization"""
+        self.service_config.validate_config()
+        self.file_path = self.service_config.destination
+        self.append_mode = "a" if self.service_config.append else "w"
         self._ensure_directory_exists()
 
     def _ensure_directory_exists(self):
@@ -52,7 +55,7 @@ class FileHandler(ServiceHandler):
         if not file_dir:
             return
         try:
-            os.makedirs(file_dir,exist_ok = True)
+            os.makedirs(file_dir, exist_ok=True)
         except PermissionError as e:
             raise LogHandlerError(f"Permissions denied creating directory {file_dir}: {e}")
         except OSError as e:
@@ -60,8 +63,8 @@ class FileHandler(ServiceHandler):
             
     async def _write_json(self, entry: LogEntry) -> bool:
         try:
-            with open(self.file_path, self.mode, encoding="utf-8") as f:
-                json.dump(entry.to_dict(),f,ensure_ascii=False)
+            with open(self.file_path, self.append_mode, encoding="utf-8") as f:
+                json.dump(entry.to_dict(), f, ensure_ascii=False)
                 f.write("\n")
             return True
         except Exception as e:
@@ -69,9 +72,9 @@ class FileHandler(ServiceHandler):
 
     async def _write_text(self, entry: LogEntry) -> bool:
         try:
-            line = f"[{entry.timestamp}] {entry.level.value if hasattr(entry.level, 'value') else entry.level} " \
-                   f"{entry.logger}: {entry.message}\n"
-            with open(self.file_path, self.mode, encoding="utf-8") as f:
+            line = f"[{entry.timestamp}] {entry.level.value if hasattr(entry.level, 'value') else entry.level} - " \
+                   f"{entry.message}\n"
+            with open(self.file_path, self.append_mode, encoding="utf-8") as f:
                 f.write(line)
             return True
         except Exception as e:
@@ -80,8 +83,9 @@ class FileHandler(ServiceHandler):
     async def _write_csv(self, entry: LogEntry) -> bool:
         try:
             file_exists = os.path.exists(self.file_path)
-            with open(self.file_path, self.mode, newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=["timestamp", "level", "logger", "message"])
+            with open(self.file_path, self.append_mode, newline="", encoding="utf-8") as f:
+                fieldnames = ["timestamp", "level", "app_name", "message"]
+                writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
                 if not file_exists or os.path.getsize(self.file_path) == 0:
                     writer.writeheader()
                 writer.writerow(entry.to_dict())
@@ -89,19 +93,25 @@ class FileHandler(ServiceHandler):
         except Exception as e:
             raise LogWriteError(f"Error writing CSV to file {self.file_path}: {e}")
 
-    async def write(self, entry: LogEntry, output_type: Optional[str] = None) -> bool:
-        """Write a single log entry to the file"""
+    async def write(self, entries: List[LogEntry]) -> bool:
+        """Write log entries to the file"""
+        if not isinstance(entries, list):
+            entries = [entries]
+        
         try:
-            output_type = output_type or self.service_config.format
+            output_format = self.service_config.format
 
-            if output_type == "json":
-                return await self._write_json(entry)
-            elif output_type == "csv":
-                return await self._write_csv(entry)
-            elif output_type == "text":
-                return await self._write_text(entry)
-            else:
-                raise LogConfigError(f"Unsupported output type: {output_type}")
+            for entry in entries:
+                if output_format == "json":
+                    await self._write_json(entry)
+                elif output_format == "csv":
+                    await self._write_csv(entry)
+                elif output_format == "text":
+                    await self._write_text(entry)
+                else:
+                    raise LogConfigError(f"Unsupported output format: {output_format}")
+            
+            return True
 
         except Exception as e:
             raise LogWriteError(f"Error writing to file {self.file_path}: {e}")

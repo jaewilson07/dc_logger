@@ -71,6 +71,59 @@ class CorrelationManager:
         # Simple random session ID
         # Auth-based session ID generation can be implemented in domain-specific libraries
         return uuid.uuid4().hex[:12]
+    
+    def get_or_create_correlation(self) -> Correlation:
+        """Get or create correlation with automatic span chaining.
+        
+        Each call creates a NEW span that chains to the previous span,
+        enabling span-per-log microservices-style tracing.
+        """
+        # Get or create trace_id (persists across logs)
+        current_trace_id = self.trace_id_var.get()
+        if not current_trace_id:
+            current_trace_id = self.generate_trace_id()
+            self.trace_id_var.set(current_trace_id)
+        
+        # Get previous span_id to set as parent
+        previous_span_id = self._trace_span_history.get(current_trace_id)
+        
+        # ALWAYS generate a NEW span_id for this log
+        new_span_id = self.generate_span_id()
+        
+        # Update context and history
+        self.span_id_var.set(new_span_id)
+        self._trace_span_history[current_trace_id] = new_span_id
+        
+        # Create correlation with chaining
+        correlation = Correlation(
+            trace_id=current_trace_id,
+            span_id=new_span_id,
+            parent_span_id=previous_span_id  # Chain to previous span
+        )
+        self.correlation_var.set(correlation)
+        
+        return correlation
+    
+    def start_new_trace(self) -> str:
+        """Start a completely new trace (clear existing trace_id).
+        
+        Use this to group separate bundles of logs:
+        - Bundle 1: User login flow -> trace_A
+        - Bundle 2: Data processing -> trace_B
+        
+        Returns the new trace_id.
+        """
+        # Clear existing trace context
+        self.trace_id_var.set(None)
+        self.request_id_var.set(None)
+        self.span_id_var.set(None)
+        self.correlation_var.set(None)
+        
+        # Generate new trace_id (next log will use this)
+        new_trace_id = self.generate_trace_id()
+        self.trace_id_var.set(new_trace_id)
+        
+        return new_trace_id
 
     def start_request(
         self,
@@ -232,7 +285,7 @@ class HTTPDetails:
 class LogEntity:
     """Entity information for logging"""
 
-    type: str  # dataset, card, user, dataflow, page, etc.
+    type: str 
     id: Optional[str] = None
     name: Optional[str] = None
 
@@ -341,16 +394,21 @@ class LogEntry:
         extra = kwargs.get("extra", {})
 
         entity_obj = LogEntity.from_any(kwargs.get("entity"))
-        correlation_obj = Correlation(**kwargs.get("correlation", {})) if kwargs.get("correlation") else None
+        
+        # Handle correlation - can be dict or Correlation object
+        correlation_param = kwargs.get("correlation")
+        if isinstance(correlation_param, Correlation):
+            correlation_obj = correlation_param
+        elif isinstance(correlation_param, dict):
+            correlation_obj = Correlation(**correlation_param)
+        else:
+            correlation_obj = None
+            
         multi_tenant_obj = MultiTenant.from_kwargs(kwargs, user)
         http_details_obj = HTTPDetails.from_kwargs(kwargs)
 
         if not user and multi_tenant_obj and multi_tenant_obj.user_id:
             user = multi_tenant_obj.user_id
-        
-        for key, value in kwargs.items():
-            if key not in ["timestamp", "level", "app_name", "message", "user", "action", "entity", "status", "duration_ms", "correlation", "multi_tenant", "http_details", "extra","method"]:
-                extra[key] = value
 
         return cls(
             timestamp=timestamp,
