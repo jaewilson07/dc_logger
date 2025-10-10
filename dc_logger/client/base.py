@@ -143,20 +143,52 @@ class Logger:
     """ should receive log entries and send them to all handlers.  handlers will use log_level and log_method to determine which logs to send"""
     
     handlers: List[HandlerInstance] = field(default_factory=list)
-    
-    pretty_print: bool = False  # Pretty print JSON for development
+
+    app_name: Optional[str]="default_app"
 
     async def write(self, entry: LogEntry):
         for handler in self.handlers:
             await handler.write(entry)
-
     
     def validate_configs(self) -> bool:
         for handler in self.handlers:
             if not handler.config.validate_config():
                 return False
         return True
+
+    async def info(self, message: str, **kwargs):
+        entry = self.create_entry(LogLevel.INFO, message, **kwargs)
+        for handler in self.handlers:
+            await handler.write(entry,**kwargs)
+
+    async def debug(self, message: str, **kwargs):
+        entry = self.create_entry(LogLevel.DEBUG, message, **kwargs)
+        for handler in self.handlers:
+            await handler.write(entry)
     
+    async def warning(self, message: str, **kwargs):
+        entry = self.create_entry(LogLevel.WARNING, message, **kwargs)
+        for handler in self.handlers:
+            await handler.write(entry)
+    
+    async def error(self, message: str, **kwargs):
+        entry = self.create_entry(LogLevel.ERROR, message, **kwargs)
+        for handler in self.handlers:
+            await handler.write(entry)
+
+    async def critical(self, message: str, **kwargs):
+        entry = self.create_entry(LogLevel.CRITICAL, message, **kwargs)
+        for handler in self.handlers:
+            await handler.write(entry)
+
+    def create_entry(self, level: LogLevel, message: str, **kwargs):
+        entry = LogEntry.create(
+            level=level,
+            message=message,
+            app_name=self.app_name,
+            **kwargs
+        )
+        return entry
     
     # def get_cloud_config(self) -> Dict[str, Any]:
     #     return {"cloud_provider": "multi"}

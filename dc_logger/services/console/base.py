@@ -5,7 +5,8 @@ __all__ = ['Console_ServiceConfig', 'ConsoleHandler']
 
 # %% ../../../nbs/services/console/base.ipynb 1
 import json
-from typing import List
+from typing import List, Optional
+
 
 from dc_logger.client.base import ServiceHandler, ServiceConfig, LogEntry
 
@@ -37,7 +38,7 @@ class ConsoleHandler(ServiceHandler):
         return message
 
     async def _write_text(self, entry: LogEntry) -> str:
-        message = f"[{entry.timestamp}] {entry.level.value} - {entry.message}"
+        message = f"[{entry.timestamp}] {entry.level.value} - {entry.message} entry metadata: {entry.to_dict()}"
         print(message)
         return message
                 

@@ -347,6 +347,10 @@ class LogEntry:
 
         if not user and multi_tenant_obj and multi_tenant_obj.user_id:
             user = multi_tenant_obj.user_id
+        
+        for key, value in kwargs.items():
+            if key not in ["timestamp", "level", "app_name", "message", "user", "action", "entity", "status", "duration_ms", "correlation", "multi_tenant", "http_details", "extra","method"]:
+                extra[key] = value
 
         return cls(
             timestamp=timestamp,
