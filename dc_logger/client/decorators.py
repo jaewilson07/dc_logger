@@ -5,7 +5,7 @@
 # %% auto 0
 __all__ = ['LogDecoratorConfig', 'log_call']
 
-# %% ../../nbs/client/decorators.ipynb 3
+# %% ../../nbs/client/decorators.ipynb 2
 import time
 import inspect
 from functools import wraps
@@ -23,8 +23,7 @@ from dc_logger.client.extractors import (
     DefaultResultProcessor
 )
 
-
-# %% ../../nbs/client/decorators.ipynb 5
+# %% ../../nbs/client/decorators.ipynb 4
 class LogDecoratorConfig:
     """Configuration for the log decorator with dependency injection."""
     
@@ -65,8 +64,9 @@ class LogDecoratorConfig:
         ]
 
 
-# %% ../../nbs/client/decorators.ipynb 7
+# %% ../../nbs/client/decorators.ipynb 6
 def log_call(
+    logger: Optional[Any] = None,
     logger_getter: Optional[Callable[[], Any]] = None,
     action_name: Optional[str] = None,
     log_level: LogLevel = LogLevel.INFO,
@@ -85,6 +85,7 @@ def log_call(
     - Dependency Inversion: Depends on abstractions, not implementations
     
     Args:
+        logger: Direct logger instance (takes precedence)
         logger_getter: Callable that returns a logger instance
         action_name: Custom action name for logs (defaults to function name)
         log_level: Minimum log level (default: INFO)
@@ -161,7 +162,7 @@ def log_call(
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
             return await _execute_with_logging(
-                func, args, kwargs, config, logger_getter, is_async=True
+                func, args, kwargs, config, logger, logger_getter, is_async=True
             )
         
         @wraps(func)
@@ -171,23 +172,22 @@ def log_call(
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     return _execute_with_logging_sync(
-                        func, args, kwargs, config, logger_getter
+                        func, args, kwargs, config, logger, logger_getter
                     )
                 else:
                     return _execute_with_logging_sync(
-                        func, args, kwargs, config, logger_getter
+                        func, args, kwargs, config, logger, logger_getter
                     )
             except RuntimeError:
                 return _execute_with_logging_sync(
-                    func, args, kwargs, config, logger_getter
+                    func, args, kwargs, config, logger, logger_getter
                 )
         
         return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
     
     return decorator
 
-
-# %% ../../nbs/client/decorators.ipynb 9
+# %% ../../nbs/client/decorators.ipynb 8
 def _sanitize_params(kwargs: dict, sensitive_params: list) -> dict:
     """Sanitize sensitive parameters for logging."""
     safe_kwargs = {}
@@ -203,20 +203,30 @@ def _sanitize_params(kwargs: dict, sensitive_params: list) -> dict:
     return safe_kwargs
 
 
-# %% ../../nbs/client/decorators.ipynb 10
+# %% ../../nbs/client/decorators.ipynb 9
 async def _execute_with_logging(
     func: Callable,
     args: tuple,
     kwargs: dict,
     config: LogDecoratorConfig,
+    logger: Optional[Any],
     logger_getter: Optional[Callable],
     is_async: bool = True
 ):
     """Execute function with logging (async version)."""
     start_time = time.time()
     
-    # Get logger instance (dependency injection)
-    logger = kwargs.get("logger") or (logger_getter() if logger_getter else None)
+    # Get logger instance with proper priority:
+    # 1. Direct logger parameter (decorator argument)
+    # 2. logger_getter callable
+    # 3. Global logger fallback
+    if logger is None:
+        if logger_getter is not None:
+            logger = logger_getter()
+        else:
+            # Import here to avoid circular imports
+            from dc_logger.client.base import get_global_logger
+            logger = get_global_logger()
     
     # Extract context using injected extractors
     entity = config.entity_extractor.extract(func, args, kwargs)
@@ -269,23 +279,36 @@ async def _execute_with_logging(
         is_error = status_code and status_code >= 400
         
         # Log success or HTTP error
-        if logger and hasattr(logger, 'write'):
+        if logger:
             level = LogLevel.ERROR if is_error else config.log_level
             message = f"{log_context['action']} {'failed with HTTP error' if is_error else 'completed'}"
             
-            # Create log entry
-            entry = LogEntry.create(
-                level=level,
-                message=message,
-                duration_ms=duration_ms,
-                status="error" if is_error else "success",
-                **log_context,
-                **result_context,
-                extra=extra
-            )
-            
-            # Write to logger
-            if is_async:
+            # Use logger.log() to get automatic correlation generation
+            if is_async and hasattr(logger, 'log'):
+                await logger.log(
+                    level=level,
+                    message=message,
+                    duration_ms=duration_ms,
+                    status="error" if is_error else "success",
+                    **log_context,
+                    **result_context,
+                    extra=extra
+                )
+            elif hasattr(logger, 'write'):
+                # Fallback: manually generate correlation if logger has correlation_manager
+                if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
+                    correlation = logger.correlation_manager.get_or_create_correlation()
+                    log_context['correlation'] = correlation
+                
+                entry = LogEntry.create(
+                    level=level,
+                    message=message,
+                    duration_ms=duration_ms,
+                    status="error" if is_error else "success",
+                    **log_context,
+                    **result_context,
+                    extra=extra
+                )
                 await logger.write(entry)
         
         return result
@@ -305,50 +328,77 @@ async def _execute_with_logging(
         }
         
         # Log error
-        if logger and hasattr(logger, 'write'):
+        if logger:
             message = f"{log_context['action']} failed: {str(e)}"
             
-            # Create log entry
-            entry = LogEntry.create(
-                level=LogLevel.ERROR,
-                message=message,
-                duration_ms=duration_ms,
-                status="error",
-                **log_context,
-                extra=error_extra
-            )
-            
-            # Write to logger
-            if is_async:
+            # Use logger.log() to get automatic correlation generation
+            if is_async and hasattr(logger, 'log'):
+                await logger.log(
+                    level=LogLevel.ERROR,
+                    message=message,
+                    duration_ms=duration_ms,
+                    status="error",
+                    **log_context,
+                    extra=error_extra
+                )
+            elif hasattr(logger, 'write'):
+                # Fallback: manually generate correlation if logger has correlation_manager
+                if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
+                    correlation = logger.correlation_manager.get_or_create_correlation()
+                    log_context['correlation'] = correlation
+                
+                entry = LogEntry.create(
+                    level=LogLevel.ERROR,
+                    message=message,
+                    duration_ms=duration_ms,
+                    status="error",
+                    **log_context,
+                    extra=error_extra
+                )
                 await logger.write(entry)
         
         raise
 
 
-# %% ../../nbs/client/decorators.ipynb 11
+# %% ../../nbs/client/decorators.ipynb 10
 def _execute_with_logging_sync(
     func: Callable,
     args: tuple,
     kwargs: dict,
     config: LogDecoratorConfig,
+    logger: Optional[Any],
     logger_getter: Optional[Callable]
 ):
     """Execute function with logging (sync version)."""
     start_time = time.time()
     
+    # Get logger instance with proper priority:
+    # 1. Direct logger parameter (decorator argument)
+    # 2. logger_getter callable
+    # 3. Global logger fallback
+    if logger is None:
+        if logger_getter is not None:
+            logger = logger_getter()
+        else:
+            # Import here to avoid circular imports
+            from dc_logger.client.base import get_global_logger
+            logger = get_global_logger()
+    
     try:
         result = func(*args, **kwargs)
         duration_ms = int((time.time() - start_time) * 1000)
         
-        # For sync functions, we create a log entry and write it
-        logger = kwargs.get("logger") or (logger_getter() if logger_getter else None)
-        
-        if logger and hasattr(logger, 'write'):
+        if logger:
             import asyncio
             
             entity = config.entity_extractor.extract(func, args, kwargs)
             http_details = config.http_extractor.extract(func, args, kwargs)
             multi_tenant = config.multitenant_extractor.extract(func, args, kwargs)
+            
+            # Manually generate correlation if logger has correlation_manager
+            correlation = None
+            if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
+                correlation = logger.correlation_manager.get_or_create_correlation()
             
             entry = LogEntry.create(
                 level=config.log_level,
@@ -358,34 +408,41 @@ def _execute_with_logging_sync(
                 multi_tenant=multi_tenant,
                 http_details=http_details,
                 duration_ms=duration_ms,
-                status="success"
+                status="success",
+                correlation=correlation
             )
             
             # Run async write in sync context
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If event loop is running, schedule the write
-                    asyncio.create_task(logger.write(entry))
-                else:
-                    # No running loop, use run_until_complete
-                    loop.run_until_complete(logger.write(entry))
-            except RuntimeError:
-                # No event loop, create one
-                asyncio.run(logger.write(entry))
+            if hasattr(logger, 'write'):
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If event loop is running, schedule the write
+                        asyncio.create_task(logger.write(entry))
+                    else:
+                        # No running loop, use run_until_complete
+                        loop.run_until_complete(logger.write(entry))
+                except RuntimeError:
+                    # No event loop, create one
+                    asyncio.run(logger.write(entry))
         
         return result
         
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
         
-        logger = kwargs.get("logger") or (logger_getter() if logger_getter else None)
-        if logger and hasattr(logger, 'write'):
+        # Logger is already resolved above, just use it
+        if logger:
             import asyncio
             
             entity = config.entity_extractor.extract(func, args, kwargs)
             http_details = config.http_extractor.extract(func, args, kwargs)
             multi_tenant = config.multitenant_extractor.extract(func, args, kwargs)
+            
+            # Manually generate correlation if logger has correlation_manager
+            correlation = None
+            if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
+                correlation = logger.correlation_manager.get_or_create_correlation()
             
             entry = LogEntry.create(
                 level=LogLevel.ERROR,
@@ -396,21 +453,22 @@ def _execute_with_logging_sync(
                 http_details=http_details,
                 duration_ms=duration_ms,
                 status="error",
+                correlation=correlation,
                 extra={"error_type": type(e).__name__, "error_message": str(e)}
             )
             
             # Run async write in sync context
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If event loop is running, schedule the write
-                    asyncio.create_task(logger.write(entry))
-                else:
-                    # No running loop, use run_until_complete
-                    loop.run_until_complete(logger.write(entry))
-            except RuntimeError:
-                # No event loop, create one
-                asyncio.run(logger.write(entry))
+            if hasattr(logger, 'write'):
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If event loop is running, schedule the write
+                        asyncio.create_task(logger.write(entry))
+                    else:
+                        # No running loop, use run_until_complete
+                        loop.run_until_complete(logger.write(entry))
+                except RuntimeError:
+                    # No event loop, create one
+                    asyncio.run(logger.write(entry))
         
         raise
-

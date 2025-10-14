@@ -354,7 +354,8 @@ class LogEntry:
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        if self.http_details:
+        # Only override method from http_details if method is still default
+        if self.http_details and self.method == "COMMENT":
             self.method = self.http_details.method
 
     def to_dict(self) -> Dict[str, Any]:
@@ -391,6 +392,7 @@ class LogEntry:
         action = kwargs.get("action")
         status = kwargs.get("status", "info")
         duration_ms = kwargs.get("duration_ms")
+        method = kwargs.get("method", "COMMENT")  # Extract method from kwargs
         extra = kwargs.get("extra", {})
 
         entity_obj = LogEntity.from_any(kwargs.get("entity"))
@@ -415,6 +417,7 @@ class LogEntry:
             level=level,
             app_name=app_name,
             message=message,
+            method=method,  # Pass method to constructor
             user=user,
             action=action,
             entity=entity_obj,

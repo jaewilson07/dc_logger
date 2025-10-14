@@ -72,23 +72,104 @@ class FileHandler(ServiceHandler):
 
     async def _write_text(self, entry: LogEntry) -> bool:
         try:
-            line = f"[{entry.timestamp}] {entry.level.value if hasattr(entry.level, 'value') else entry.level} - " \
-                   f"{entry.message}\n"
+            # Get all fields from the entry
+            entry_dict = entry.to_dict()
+            
+            # Build the main log line
+            level = entry.level.value if hasattr(entry.level, 'value') else entry.level
+            line = f"[{entry.timestamp}] {level} - {entry.message}"
+            
+            # Collect metadata (all fields except timestamp, level, and message)
+            metadata_parts = []
+            for key, value in entry_dict.items():
+                if key not in ['timestamp', 'level', 'message']:
+                    if isinstance(value, dict):
+                        # Format nested dicts
+                        nested_parts = [f"{key}.{k}={v}" for k, v in value.items() if v is not None]
+                        metadata_parts.extend(nested_parts)
+                    elif value is not None:
+                        metadata_parts.append(f"{key}={value}")
+            
+            # Add metadata if present
+            if metadata_parts:
+                line += " | " + ", ".join(metadata_parts)
+            
+            line += "\n"
+            
             with open(self.file_path, self.append_mode, encoding="utf-8") as f:
                 f.write(line)
             return True
         except Exception as e:
             raise LogWriteError(f"Error writing text to file {self.file_path}: {e}")
 
+    def _flatten_dict(self, d: dict, parent_key: str = '', sep: str = '.') -> dict:
+        """Flatten nested dictionaries into dot notation"""
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict) and v:
+                items.extend(self._flatten_dict(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+    
     async def _write_csv(self, entry: LogEntry) -> bool:
         try:
             file_exists = os.path.exists(self.file_path)
-            with open(self.file_path, self.append_mode, newline="", encoding="utf-8") as f:
-                fieldnames = ["timestamp", "level", "app_name", "message"]
-                writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
-                if not file_exists or os.path.getsize(self.file_path) == 0:
+            entry_dict = entry.to_dict()
+            
+            # Flatten the entry dictionary to handle nested objects
+            flattened_entry = self._flatten_dict(entry_dict)
+            
+            # Get existing fieldnames if file exists
+            existing_fieldnames = []
+            if file_exists and os.path.getsize(self.file_path) > 0:
+                with open(self.file_path, 'r', newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    existing_fieldnames = reader.fieldnames or []
+            
+            # Merge existing fieldnames with new ones, preserving order
+            # Priority order: timestamp, level, app_name, message first
+            priority_fields = ["timestamp", "level", "app_name", "message"]
+            new_fields = set(flattened_entry.keys())
+            
+            # Start with priority fields that exist
+            fieldnames = [f for f in priority_fields if f in new_fields]
+            
+            # Add existing fields that aren't priority fields
+            for field in existing_fieldnames:
+                if field not in fieldnames:
+                    fieldnames.append(field)
+            
+            # Add new fields that aren't already in the list
+            for field in sorted(new_fields - set(fieldnames)):
+                fieldnames.append(field)
+            
+            # Determine if we need to rewrite the file (new columns added)
+            needs_rewrite = file_exists and set(fieldnames) != set(existing_fieldnames)
+            
+            if needs_rewrite:
+                # Read existing data
+                existing_data = []
+                with open(self.file_path, 'r', newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    existing_data = list(reader)
+                
+                # Rewrite file with new headers
+                with open(self.file_path, 'w', newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
-                writer.writerow(entry.to_dict())
+                    for row in existing_data:
+                        writer.writerow(row)
+                    writer.writerow(flattened_entry)
+            else:
+                # Normal append or new file
+                with open(self.file_path, self.append_mode, newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    if not file_exists or os.path.getsize(self.file_path) == 0:
+                        writer.writeheader()
+                    writer.writerow(flattened_entry)
+            
             return True
         except Exception as e:
             raise LogWriteError(f"Error writing CSV to file {self.file_path}: {e}")
