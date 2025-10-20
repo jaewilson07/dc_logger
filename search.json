@@ -1,0 +1,252 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "DC Logger",
+    "section": "",
+    "text": "A comprehensive structured logging system for Domo applications with support for multiple output handlers, correlation tracking, and cloud integrations.\n\n\n\nMultiple Output Handlers: Console, file, and cloud integrations (Datadog, AWS, GCP, Azure)\nStructured Logging: JSON-formatted logs with rich contextual information\nCorrelation Tracking: Distributed tracing with trace IDs, span IDs, and request IDs\nAsync & Sync Support: Works in both async and synchronous environments\nDecorator-Based Logging: Automatic function call logging with @log_function_call\nMulti-Tenant Support: Track users, sessions, tenants, and organizations\nHTTP Details: Capture request/response information automatically\nEntity Tracking: Log operations on datasets, users, cards, etc.\nFlexible Configuration: Simple factory functions or custom configs\nSOLID Principles: Clean, maintainable, extensible architecture\n\n\n\n\npip install -e .\n\n\n\n\n\nimport asyncio\nfrom dc_logger import get_logger, LogLevel\n\nasync def main():\n    logger = get_logger(\"myapp\")\n    \n    await logger.info(\"Application started\")\n    await logger.debug(\"Debug information\")\n    await logger.error(\"Something went wrong\", extra={\"error_code\": 500})\n    \n    await logger.close()\n\nasyncio.run(main())\n\n\n\nfrom dc_logger import DC_Logger, create_console_file_config, LogLevel\n\nconfig = create_console_file_config(\n    file_path=\"logs/app.log\",\n    level=LogLevel.INFO,\n    pretty_print=True\n)\nlogger = DC_Logger(config, \"myapp\")\n\nawait logger.info(\"Logging to both console and file\")\n\n\n\nfrom dc_logger import DC_Logger, create_console_datadog_config\n\nconfig = create_console_datadog_config(\n    datadog_api_key=\"your-api-key\",\n    datadog_service=\"myapp\",\n    datadog_env=\"production\"\n)\nlogger = DC_Logger(config, \"myapp\")\n\nawait logger.info(\"Sent to both console and Datadog\")\n\n\n\nfrom dc_logger import log_function_call, LogLevel\n\n@log_function_call(\n    action_name=\"fetch_user_data\",\n    include_params=True,\n    log_level=LogLevel.INFO\n)\nasync def fetch_user_data(user_id: str, auth=None):\n    # Your code here\n    return data\n\n\n\nfrom dc_logger import get_logger, Entity, HTTPDetails\n\nlogger = get_logger(\"myapp\")\n\nentity = Entity(type=\"dataset\", id=\"abc123\", name=\"Sales Data\")\nhttp_details = HTTPDetails(method=\"GET\", url=\"/api/data\", status_code=200)\n\nawait logger.info(\n    \"Data fetched successfully\",\n    action=\"fetch_data\",\n    entity=entity,\n    http_details=http_details,\n    duration_ms=250,\n    extra={\"rows\": 1000}\n)\n\n\n\n\ndc_logger/\n├── client/              # Core data models and utilities\n├── configs/             # Configuration classes\n├── handlers/            # Log output handlers\n│   └── cloud/          # Cloud platform integrations\n├── logger.py           # Main DC_Logger class\n├── decorators.py       # Decorator for automatic logging\n├── utils.py            # Utility functions\n└── readme.md           # This file\nSee architecture.md for detailed documentation.\n\n\n\n\n\n\ncreate_console_config() - Simple console logging\ncreate_file_config() - File logging\ncreate_console_file_config() - Console + file\ncreate_console_datadog_config() - Console + Datadog\ncreate_console_file_datadog_config() - Console + file + Datadog\ncreate_file_datadog_config() - File + Datadog\n\n\n\n\n\n\nDEBUG - Detailed information for debugging\nINFO - General informational messages\nWARNING - Warning messages\nERROR - Error messages\nCRITICAL - Critical errors\n\n\n\n\n\nAlways await async methods (log, flush, close)\nUse factory functions for common configurations\nProvide context in log calls (entity, action, etc.)\nUse structured logging with extra fields\nClose logger properly on application shutdown\nUse correlation IDs for distributed tracing\nSanitize sensitive data before logging\n\n\n\n\n\n\n\nClasses: PascalCase (e.g., DC_Logger, ConsoleHandler)\nFunctions: snake_case (e.g., get_logger, create_console_config)\nFollow SOLID principles\nWrite clean, concise, readable code\nFollow best practices for the technology stack\n\n\n\n\n\nSplit classes into separate files unless closely related\nUse classes with methods that call route functions\nKeep files focused and maintainable\nUpdate exports in __init__.py files\n\n\n\n\n\n\nFollow the existing code structure and patterns\nRespect SOLID principles\nUse correct naming conventions\nWrite concise, readable code\nAdd tests for new functionality\nUpdate documentation"
+  },
+  {
+    "objectID": "index.html#features",
+    "href": "index.html#features",
+    "title": "DC Logger",
+    "section": "",
+    "text": "Multiple Output Handlers: Console, file, and cloud integrations (Datadog, AWS, GCP, Azure)\nStructured Logging: JSON-formatted logs with rich contextual information\nCorrelation Tracking: Distributed tracing with trace IDs, span IDs, and request IDs\nAsync & Sync Support: Works in both async and synchronous environments\nDecorator-Based Logging: Automatic function call logging with @log_function_call\nMulti-Tenant Support: Track users, sessions, tenants, and organizations\nHTTP Details: Capture request/response information automatically\nEntity Tracking: Log operations on datasets, users, cards, etc.\nFlexible Configuration: Simple factory functions or custom configs\nSOLID Principles: Clean, maintainable, extensible architecture"
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "DC Logger",
+    "section": "",
+    "text": "pip install -e ."
+  },
+  {
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "DC Logger",
+    "section": "",
+    "text": "import asyncio\nfrom dc_logger import get_logger, LogLevel\n\nasync def main():\n    logger = get_logger(\"myapp\")\n    \n    await logger.info(\"Application started\")\n    await logger.debug(\"Debug information\")\n    await logger.error(\"Something went wrong\", extra={\"error_code\": 500})\n    \n    await logger.close()\n\nasyncio.run(main())\n\n\n\nfrom dc_logger import DC_Logger, create_console_file_config, LogLevel\n\nconfig = create_console_file_config(\n    file_path=\"logs/app.log\",\n    level=LogLevel.INFO,\n    pretty_print=True\n)\nlogger = DC_Logger(config, \"myapp\")\n\nawait logger.info(\"Logging to both console and file\")\n\n\n\nfrom dc_logger import DC_Logger, create_console_datadog_config\n\nconfig = create_console_datadog_config(\n    datadog_api_key=\"your-api-key\",\n    datadog_service=\"myapp\",\n    datadog_env=\"production\"\n)\nlogger = DC_Logger(config, \"myapp\")\n\nawait logger.info(\"Sent to both console and Datadog\")\n\n\n\nfrom dc_logger import log_function_call, LogLevel\n\n@log_function_call(\n    action_name=\"fetch_user_data\",\n    include_params=True,\n    log_level=LogLevel.INFO\n)\nasync def fetch_user_data(user_id: str, auth=None):\n    # Your code here\n    return data\n\n\n\nfrom dc_logger import get_logger, Entity, HTTPDetails\n\nlogger = get_logger(\"myapp\")\n\nentity = Entity(type=\"dataset\", id=\"abc123\", name=\"Sales Data\")\nhttp_details = HTTPDetails(method=\"GET\", url=\"/api/data\", status_code=200)\n\nawait logger.info(\n    \"Data fetched successfully\",\n    action=\"fetch_data\",\n    entity=entity,\n    http_details=http_details,\n    duration_ms=250,\n    extra={\"rows\": 1000}\n)"
+  },
+  {
+    "objectID": "index.html#project-structure",
+    "href": "index.html#project-structure",
+    "title": "DC Logger",
+    "section": "",
+    "text": "dc_logger/\n├── client/              # Core data models and utilities\n├── configs/             # Configuration classes\n├── handlers/            # Log output handlers\n│   └── cloud/          # Cloud platform integrations\n├── logger.py           # Main DC_Logger class\n├── decorators.py       # Decorator for automatic logging\n├── utils.py            # Utility functions\n└── readme.md           # This file\nSee architecture.md for detailed documentation."
+  },
+  {
+    "objectID": "index.html#configuration",
+    "href": "index.html#configuration",
+    "title": "DC Logger",
+    "section": "",
+    "text": "create_console_config() - Simple console logging\ncreate_file_config() - File logging\ncreate_console_file_config() - Console + file\ncreate_console_datadog_config() - Console + Datadog\ncreate_console_file_datadog_config() - Console + file + Datadog\ncreate_file_datadog_config() - File + Datadog"
+  },
+  {
+    "objectID": "index.html#log-levels",
+    "href": "index.html#log-levels",
+    "title": "DC Logger",
+    "section": "",
+    "text": "DEBUG - Detailed information for debugging\nINFO - General informational messages\nWARNING - Warning messages\nERROR - Error messages\nCRITICAL - Critical errors"
+  },
+  {
+    "objectID": "index.html#best-practices",
+    "href": "index.html#best-practices",
+    "title": "DC Logger",
+    "section": "",
+    "text": "Always await async methods (log, flush, close)\nUse factory functions for common configurations\nProvide context in log calls (entity, action, etc.)\nUse structured logging with extra fields\nClose logger properly on application shutdown\nUse correlation IDs for distributed tracing\nSanitize sensitive data before logging"
+  },
+  {
+    "objectID": "index.html#development-guidelines",
+    "href": "index.html#development-guidelines",
+    "title": "DC Logger",
+    "section": "",
+    "text": "Classes: PascalCase (e.g., DC_Logger, ConsoleHandler)\nFunctions: snake_case (e.g., get_logger, create_console_config)\nFollow SOLID principles\nWrite clean, concise, readable code\nFollow best practices for the technology stack\n\n\n\n\n\nSplit classes into separate files unless closely related\nUse classes with methods that call route functions\nKeep files focused and maintainable\nUpdate exports in __init__.py files"
+  },
+  {
+    "objectID": "index.html#contributing",
+    "href": "index.html#contributing",
+    "title": "DC Logger",
+    "section": "",
+    "text": "Follow the existing code structure and patterns\nRespect SOLID principles\nUse correct naming conventions\nWrite concise, readable code\nAdd tests for new functionality\nUpdate documentation"
+  },
+  {
+    "objectID": "client/exceptions.html",
+    "href": "client/exceptions.html",
+    "title": "Exceptions",
+    "section": "",
+    "text": "LogFlushError\nException for log flush errors\n\n\n\nLogWriteError\nException for log write errors\n\n\n\nLogConfigError\nException for log configuration errors\n\n\n\nLogHandlerError\nException for log handler errors\n\n\n\nDC_LoggingError\nBase exception for logging errors",
+    "crumbs": [
+      "client",
+      "Exceptions"
+    ]
+  },
+  {
+    "objectID": "client/base.html",
+    "href": "client/base.html",
+    "title": "Base classes",
+    "section": "",
+    "text": "source\n\n\n\n ServiceHandler (buffer_settings:__main__.Handler_BufferSettings,\n                 service_config:Optional[__main__.ServiceConfig]=None,\n                 buffer:List[dc_logger.client.Log.LogEntry]=&lt;factory&gt;)\n\ndefines how a handler communicates with services to create logs\n\nsource\n\n\n\n\n Handler_BufferSettings (batch_size:int=100, flush_interval:int=30,\n                         max_buffer_size:int=1000)\n\nabstract base configuration for logging configuration settings\n\nsource\n\n\n\n\n ServiceConfig (output_mode:Literal['cloud','console','file','multi'])\n\nabstract base class for service-specific configuration settings\n\nsource\n\n\n\n\n HandlerInstance (service_handler:__main__.ServiceHandler,\n                  handler_name:str=None,\n                  log_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INFO:\n                  'INFO'&gt;, log_method:List[str]=&lt;factory&gt;)\n\nWraps a ServiceHandler with filtering logic (log level and method filtering)\n\nsource\n\n\n\n\n Logger (handlers:List[__main__.HandlerInstance]=&lt;factory&gt;,\n         app_name:Optional[str]='default_app',\n         min_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INFO: 'INFO'&gt;, \n         correlation_manager:Optional[dc_logger.client.Log.CorrelationMana\n         ger]=&lt;factory&gt;)\n\nEnhanced logger with structured logging and automatic correlation tracking\n\nsource\n\n\n\n\n get_or_create_logger\n                       (handlers:Optional[List[__main__.HandlerInstance]]=\n                       None, app_name:str='default_app',\n                       auto_set_global:bool=True)\n\n*Get existing global logger or create a new one.\nArgs: handlers: List of HandlerInstance objects (only used if creating new logger) app_name: Application name (only used if creating new logger) auto_set_global: Whether to automatically set as global logger if creating new\nReturns: The global logger instance*\n\nsource\n\n\n\n\n set_global_logger (logger:__main__.Logger)\n\n*Set the global logger instance.\nArgs: logger: The Logger instance to set as global*\n\nsource\n\n\n\n\n get_global_logger ()\n\nGet the global logger instance.",
+    "crumbs": [
+      "client",
+      "Base classes"
+    ]
+  },
+  {
+    "objectID": "client/base.html#service-handler-defines-route-functions-for-how-to-interact-with-a-service.",
+    "href": "client/base.html#service-handler-defines-route-functions-for-how-to-interact-with-a-service.",
+    "title": "Base classes",
+    "section": "",
+    "text": "source\n\n\n\n ServiceHandler (buffer_settings:__main__.Handler_BufferSettings,\n                 service_config:Optional[__main__.ServiceConfig]=None,\n                 buffer:List[dc_logger.client.Log.LogEntry]=&lt;factory&gt;)\n\ndefines how a handler communicates with services to create logs\n\nsource\n\n\n\n\n Handler_BufferSettings (batch_size:int=100, flush_interval:int=30,\n                         max_buffer_size:int=1000)\n\nabstract base configuration for logging configuration settings\n\nsource\n\n\n\n\n ServiceConfig (output_mode:Literal['cloud','console','file','multi'])\n\nabstract base class for service-specific configuration settings\n\nsource\n\n\n\n\n HandlerInstance (service_handler:__main__.ServiceHandler,\n                  handler_name:str=None,\n                  log_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INFO:\n                  'INFO'&gt;, log_method:List[str]=&lt;factory&gt;)\n\nWraps a ServiceHandler with filtering logic (log level and method filtering)\n\nsource\n\n\n\n\n Logger (handlers:List[__main__.HandlerInstance]=&lt;factory&gt;,\n         app_name:Optional[str]='default_app',\n         min_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INFO: 'INFO'&gt;, \n         correlation_manager:Optional[dc_logger.client.Log.CorrelationMana\n         ger]=&lt;factory&gt;)\n\nEnhanced logger with structured logging and automatic correlation tracking\n\nsource\n\n\n\n\n get_or_create_logger\n                       (handlers:Optional[List[__main__.HandlerInstance]]=\n                       None, app_name:str='default_app',\n                       auto_set_global:bool=True)\n\n*Get existing global logger or create a new one.\nArgs: handlers: List of HandlerInstance objects (only used if creating new logger) app_name: Application name (only used if creating new logger) auto_set_global: Whether to automatically set as global logger if creating new\nReturns: The global logger instance*\n\nsource\n\n\n\n\n set_global_logger (logger:__main__.Logger)\n\n*Set the global logger instance.\nArgs: logger: The Logger instance to set as global*\n\nsource\n\n\n\n\n get_global_logger ()\n\nGet the global logger instance.",
+    "crumbs": [
+      "client",
+      "Base classes"
+    ]
+  },
+  {
+    "objectID": "services/console/base.html",
+    "href": "services/console/base.html",
+    "title": "dc_logger",
+    "section": "",
+    "text": "source\n\nConsole_ServiceConfig\n\n Console_ServiceConfig\n                        (output_mode:Literal['cloud','console','file','mul\n                        ti']='console', output_type:str='text')\n\nConsole-specific log configuration\n\nsource\n\n\nConsoleHandler\n\n ConsoleHandler\n                 (buffer_settings:dc_logger.client.base.Handler_BufferSett\n                 ings, service_config:Optional[dc_logger.client.base.Servi\n                 ceConfig]=None,\n                 buffer:List[dc_logger.client.Log.LogEntry]=&lt;factory&gt;)\n\nHandler for console output",
+    "crumbs": [
+      "services",
+      "console",
+      "base.html"
+    ]
+  },
+  {
+    "objectID": "services/cloud/base.html",
+    "href": "services/cloud/base.html",
+    "title": "Base Cloud ServiceHandler",
+    "section": "",
+    "text": "source\n\nCloudHandler\n\n CloudHandler\n               (buffer_settings:dc_logger.client.base.Handler_BufferSettin\n               gs, service_config:Optional[dc_logger.client.base.ServiceCo\n               nfig]=None,\n               buffer:List[dc_logger.client.Log.LogEntry]=&lt;factory&gt;)\n\nbase class for communicating with service provider (route functions)\n\nsource\n\n\nCloudServiceConfig\n\n CloudServiceConfig\n                     (output_mode:Literal['cloud','console','file','multi'\n                     ], cloud_provider:str)\n\nstores auth and connection information to a service provider",
+    "crumbs": [
+      "services",
+      "cloud",
+      "Base Cloud ServiceHandler"
+    ]
+  },
+  {
+    "objectID": "services/file/base.html",
+    "href": "services/file/base.html",
+    "title": "dc_logger",
+    "section": "",
+    "text": "source\n\nFile_ServiceConfig\n\n File_ServiceConfig (output_mode:Literal['file']='file', destination:str,\n                     format:Literal['json','text','csv']='text',\n                     append:bool=True)\n\nConfiguration for file-based logging output\n\nsource\n\n\nFileHandler\n\n FileHandler\n              (buffer_settings:dc_logger.client.base.Handler_BufferSetting\n              s, service_config:Optional[dc_logger.client.base.ServiceConf\n              ig]=None,\n              buffer:List[dc_logger.client.Log.LogEntry]=&lt;factory&gt;)\n\nHandler for file output",
+    "crumbs": [
+      "services",
+      "file",
+      "base.html"
+    ]
+  },
+  {
+    "objectID": "services/cloud/datadog.html",
+    "href": "services/cloud/datadog.html",
+    "title": "dc_logger",
+    "section": "",
+    "text": "source\n\nDatadog_ServiceConfig\n\n Datadog_ServiceConfig (output_mode:str='cloud',\n                        cloud_provider:str='datadog',\n                        api_key:Optional[str]=None,\n                        app_key:Optional[str]=None,\n                        site:str='datadoghq.com', service:str='dc_logger',\n                        env:str='production')\n\nDatadog-specific log configuration\n\ndds = Datadog_ServiceConfig(\n    api_key = 123\n)\n\n\nsource\n\n\nDatadogHandler\n\n DatadogHandler (config)\n\nDatadog log handler using direct HTTP API\n\nimport nbdev; nbdev.nbdev_export('./datadog.ipynb')",
+    "crumbs": [
+      "services",
+      "cloud",
+      "datadog.html"
+    ]
+  },
+  {
+    "objectID": "client/decorators.html",
+    "href": "client/decorators.html",
+    "title": "Function Call Decorators",
+    "section": "",
+    "text": "Configuration class that accepts injected extractors and processors. Following the Dependency Inversion Principle - depends on abstractions, not concretions.\n\nsource\n\n\n\n LogDecoratorConfig (action_name:Optional[str]=None,\n                     log_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INF\n                     O: 'INFO'&gt;, entity_extractor:Optional[dc_logger.clien\n                     t.extractors.EntityExtractor]=None, http_extractor:Op\n                     tional[dc_logger.client.extractors.HTTPDetailsExtract\n                     or]=None, multitenant_extractor:Optional[dc_logger.cl\n                     ient.extractors.MultiTenantExtractor]=None, result_pr\n                     ocessor:Optional[dc_logger.client.extractors.ResultPr\n                     ocessor]=None, include_params:bool=False,\n                     sensitive_params:Optional[list]=None)\n\nConfiguration for the log decorator with dependency injection.",
+    "crumbs": [
+      "client",
+      "Function Call Decorators"
+    ]
+  },
+  {
+    "objectID": "client/decorators.html#decorator-configuration",
+    "href": "client/decorators.html#decorator-configuration",
+    "title": "Function Call Decorators",
+    "section": "",
+    "text": "Configuration class that accepts injected extractors and processors. Following the Dependency Inversion Principle - depends on abstractions, not concretions.\n\nsource\n\n\n\n LogDecoratorConfig (action_name:Optional[str]=None,\n                     log_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INF\n                     O: 'INFO'&gt;, entity_extractor:Optional[dc_logger.clien\n                     t.extractors.EntityExtractor]=None, http_extractor:Op\n                     tional[dc_logger.client.extractors.HTTPDetailsExtract\n                     or]=None, multitenant_extractor:Optional[dc_logger.cl\n                     ient.extractors.MultiTenantExtractor]=None, result_pr\n                     ocessor:Optional[dc_logger.client.extractors.ResultPr\n                     ocessor]=None, include_params:bool=False,\n                     sensitive_params:Optional[list]=None)\n\nConfiguration for the log decorator with dependency injection.",
+    "crumbs": [
+      "client",
+      "Function Call Decorators"
+    ]
+  },
+  {
+    "objectID": "client/decorators.html#main-decorator",
+    "href": "client/decorators.html#main-decorator",
+    "title": "Function Call Decorators",
+    "section": "Main Decorator",
+    "text": "Main Decorator\nThe decorator orchestrates all components. It accepts a logger getter for dependency injection.\n\nsource\n\nlog_call\n\n log_call (logger:Optional[Any]=None,\n           logger_getter:Optional[Callable[[],Any]]=None,\n           action_name:Optional[str]=None,\n           log_level:dc_logger.client.Log.LogLevel=&lt;LogLevel.INFO:\n           'INFO'&gt;, include_params:bool=False,\n           sensitive_params:Optional[list]=None,\n           config:Optional[__main__.LogDecoratorConfig]=None)\n\n*Decorator to automatically log function calls with full dependency injection support.\nThis decorator follows SOLID principles: - Single Responsibility: Each component has one job - Open/Closed: Extend via custom extractors without modifying decorator - Liskov Substitution: Any extractor implementation works - Interface Segregation: Separate interfaces for different concerns - Dependency Inversion: Depends on abstractions, not implementations\nArgs: logger: Direct logger instance (takes precedence) logger_getter: Callable that returns a logger instance action_name: Custom action name for logs (defaults to function name) log_level: Minimum log level (default: INFO) include_params: Whether to include function parameters in logs sensitive_params: List of parameter names to sanitize config: LogDecoratorConfig for custom extractors (optional)\nExamples: Basic usage: python     @log_call(logger_getter=get_logger)     async def my_function():         pass\nWith common options:\n```python\n@log_call(\n    logger_getter=get_logger,\n    action_name=\"custom_action\",\n    log_level=LogLevel.DEBUG,\n    include_params=True\n)\nasync def my_function(param1, param2):\n    pass\n```\n\nWith custom extractors:\n```python\n@log_call(\n    logger_getter=get_logger,\n    config=LogDecoratorConfig(\n        entity_extractor=MyCustomEntityExtractor(),\n        result_processor=MyCustomResultProcessor()\n    )\n)\nasync def my_function():\n    pass\n```\n\nCombined usage:\n```python\n@log_call(\n    logger_getter=get_logger,\n    action_name=\"process_order\",\n    log_level=LogLevel.INFO,\n    include_params=True,\n    config=LogDecoratorConfig(entity_extractor=OrderExtractor())\n)\nasync def process_order(order_id, customer_id):\n    pass\n```*",
+    "crumbs": [
+      "client",
+      "Function Call Decorators"
+    ]
+  },
+  {
+    "objectID": "client/decorators.html#helper-functions",
+    "href": "client/decorators.html#helper-functions",
+    "title": "Function Call Decorators",
+    "section": "Helper Functions",
+    "text": "Helper Functions\nInternal implementation details for executing functions with logging.",
+    "crumbs": [
+      "client",
+      "Function Call Decorators"
+    ]
+  },
+  {
+    "objectID": "client/log.html",
+    "href": "client/log.html",
+    "title": "log tracing details",
+    "section": "",
+    "text": "source\n\nCorrelationManager\n\n CorrelationManager ()\n\nManages correlation IDs and context propagation\n\nsource\n\n\nCorrelation\n\n Correlation (trace_id:Optional[str]=None, span_id:Optional[str]=None,\n              parent_span_id:Optional[str]=None)\n\nCorrelation information for distributed tracing\n\nsource\n\n\nMultiTenant\n\n MultiTenant (user_id:Optional[str]=None, session_id:Optional[str]=None,\n              tenant_id:Optional[str]=None,\n              organization_id:Optional[str]=None)\n\nMulti-tenant information\n\nsource\n\n\nHTTPDetails\n\n HTTPDetails (method:Optional[str]=None, url:Optional[str]=None,\n              status_code:Optional[int]=None,\n              headers:Optional[Dict[str,str]]=None,\n              params:Optional[Dict[str,Any]]=None,\n              response_size:Optional[int]=None,\n              request_body:Optional[Any]=None,\n              response_body:Optional[Any]=None)\n\nHTTP request/response details\n\nsource\n\n\nLogEntity\n\n LogEntity (type:str, id:Optional[str]=None, name:Optional[str]=None,\n            additional_info:Dict[str,Any]=&lt;factory&gt;)\n\nEntity information for logging\n\nsource\n\n\nLogLevel\n\n LogLevel (value, names=None, module=None, qualname=None, type=None,\n           start=1)\n\nStandard logging levels\n\nsource\n\n\nLogEntry\n\n LogEntry (timestamp:str, level:__main__.LogLevel, message:str,\n           method:Literal['POST','PUT','DELETE','PATCH','COMMENT']='COMMEN\n           T', app_name:str='default', user:Optional[str]=None,\n           action:Optional[str]=None,\n           entity:Optional[__main__.LogEntity]=None, status:str='info',\n           duration_ms:Optional[int]=None,\n           correlation:Optional[__main__.Correlation]=None,\n           multi_tenant:Optional[__main__.MultiTenant]=None,\n           http_details:Optional[__main__.HTTPDetails]=None,\n           extra:Dict[str,Any]=&lt;factory&gt;)\n\nEnhanced log entry with structured JSON format\n\nlog = LogEntry.create(level = LogLevel.INFO, message = 'hello world')\n\nlog.to_dict()\n\n{'timestamp': '2025-10-10T12:33:53.815172Z',\n 'level': 'INFO',\n 'app_name': 'default',\n 'message': 'hello world',\n 'method': 'COMMENT',\n 'status': 'info',\n 'extra': {}}",
+    "crumbs": [
+      "client",
+      "log tracing details"
+    ]
+  },
+  {
+    "objectID": "client/extractors.html",
+    "href": "client/extractors.html",
+    "title": "Context Extractors",
+    "section": "",
+    "text": "These abstract base classes define the contract for extracting different types of context information from function calls.\nFollowing the Interface Segregation Principle, each extractor has a single, focused responsibility.\n\nsource\n\n\n\n EntityExtractor ()\n\nAbstract base class for extracting entity information from function arguments.\n\nsource\n\n\n\n\n HTTPDetailsExtractor ()\n\nAbstract base class for extracting HTTP details from function arguments.\n\nsource\n\n\n\n\n MultiTenantExtractor ()\n\nAbstract base class for extracting multi-tenant information from function arguments.\n\nsource\n\n\n\n\n ResultProcessor ()\n\nAbstract base class for processing function results.",
+    "crumbs": [
+      "client",
+      "Context Extractors"
+    ]
+  },
+  {
+    "objectID": "client/extractors.html#extractor-interfaces",
+    "href": "client/extractors.html#extractor-interfaces",
+    "title": "Context Extractors",
+    "section": "",
+    "text": "These abstract base classes define the contract for extracting different types of context information from function calls.\nFollowing the Interface Segregation Principle, each extractor has a single, focused responsibility.\n\nsource\n\n\n\n EntityExtractor ()\n\nAbstract base class for extracting entity information from function arguments.\n\nsource\n\n\n\n\n HTTPDetailsExtractor ()\n\nAbstract base class for extracting HTTP details from function arguments.\n\nsource\n\n\n\n\n MultiTenantExtractor ()\n\nAbstract base class for extracting multi-tenant information from function arguments.\n\nsource\n\n\n\n\n ResultProcessor ()\n\nAbstract base class for processing function results.",
+    "crumbs": [
+      "client",
+      "Context Extractors"
+    ]
+  },
+  {
+    "objectID": "client/extractors.html#default-implementations",
+    "href": "client/extractors.html#default-implementations",
+    "title": "Context Extractors",
+    "section": "Default Implementations",
+    "text": "Default Implementations\nThese are sensible default implementations that work with keyword arguments. You can extend or replace these for domain-specific behavior.\n\nsource\n\nKwargsEntityExtractor\n\n KwargsEntityExtractor (kwarg_name:str='entity')\n\nDefault entity extractor that looks for entity in kwargs.\n\nsource\n\n\nKwargsHTTPDetailsExtractor\n\n KwargsHTTPDetailsExtractor ()\n\nDefault HTTP details extractor that looks for common HTTP kwargs.\n\nsource\n\n\nKwargsMultiTenantExtractor\n\n KwargsMultiTenantExtractor ()\n\nDefault multi-tenant extractor that looks for multi_tenant in kwargs.\n\nsource\n\n\nDefaultResultProcessor\n\n DefaultResultProcessor (include_result:bool=False,\n                         max_result_length:int=100)\n\nDefault result processor with configurable result inclusion.",
+    "crumbs": [
+      "client",
+      "Context Extractors"
+    ]
+  },
+  {
+    "objectID": "client/extractors.html#example-custom-extractor",
+    "href": "client/extractors.html#example-custom-extractor",
+    "title": "Context Extractors",
+    "section": "Example: Custom Extractor",
+    "text": "Example: Custom Extractor\nHere’s an example of how to create a custom extractor for domain-specific needs.\n\n# Example: Custom extractor for specific auth objects\n# This example shows how you might extract entity info from an auth object\n\n# class AuthBasedEntityExtractor(EntityExtractor):\n#     \"\"\"Extract entity from authentication object.\"\"\"\n#     \n#     def extract(self, func: Callable, args: tuple, kwargs: dict) -&gt; Optional[LogEntity]:\n#         auth = kwargs.get(\"auth\")\n#         \n#         # Extract from auth if it has specific attributes\n#         if auth and hasattr(auth, \"instance_id\"):\n#             return LogEntity(\n#                 type=\"instance\",\n#                 id=getattr(auth, \"instance_id\", None),\n#                 name=getattr(auth, \"instance_name\", None)\n#             )\n#         \n#         # Fallback to checking kwargs for entity\n#         entity = kwargs.get(\"entity\")\n#         return LogEntity.from_any(entity) if entity else None",
+    "crumbs": [
+      "client",
+      "Context Extractors"
+    ]
+  }
+]
