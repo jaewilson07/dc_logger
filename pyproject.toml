@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dc_logger"
+version = "1.0.0"
+description = "A comprehensive structured logging system for Domo applications with support for multiple output handlers, correlation tracking, and cloud integrations."
+readme = "readme.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Jae Wilson", email = "jae@rae.li"}
+]
+keywords = ["logging", "structured-logging", "domo", "datadog", "aws", "gcp", "azure", "observability"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Logging",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+datadog = ["datadog-api-client"]
+aws = ["boto3"]
+gcp = ["google-cloud-logging"]
+azure = ["azure-monitor-ingestion"]
+all = ["datadog-api-client", "boto3", "google-cloud-logging", "azure-monitor-ingestion"]
+
+[project.urls]
+Homepage = "https://github.com/jaewilson07/dc_logger"
+Documentation = "https://github.com/jaewilson07/dc_logger"
+Repository = "https://github.com/jaewilson07/dc_logger"
+Issues = "https://github.com/jaewilson07/dc_logger/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dc_logger*"]
+namespaces = false
