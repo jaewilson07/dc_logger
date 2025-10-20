@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dc_logger"
-version = "1.0.0"
+version = "1.0.0-beta.1"
 description = "A comprehensive structured logging system for Domo applications with support for multiple output handlers, correlation tracking, and cloud integrations."
 readme = "readme.md"
 requires-python = ">=3.9"
