@@ -203,7 +203,7 @@ def get_logger(app_name: str = "domolibrary") -> DC_Logger:
     global _global_logger
     if _global_logger is None:
         config = ConsoleLogConfig(level=LogLevel.INFO, pretty_print=False)
-        _global_logger = DomoLogger(config, app_name)
+        _global_logger = DC_Logger(config, app_name)
 
     return _global_logger
 
