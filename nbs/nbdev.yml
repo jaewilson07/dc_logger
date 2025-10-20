@@ -1,9 +1,0 @@
-project:
-  output-dir: _docs
-
-website:
-  title: "dc_logger"
-  site-url: "https://jaewilson07.github.io/dc_logger"
-  description: ""
-  repo-branch: main
-  repo-url: "https://github.com/jaewilson07/dc_logger"
