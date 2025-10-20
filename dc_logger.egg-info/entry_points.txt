@@ -1,2 +1,0 @@
-[nbdev]
-dc_logger = dc_logger._modidx:d
