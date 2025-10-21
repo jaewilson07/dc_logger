@@ -12,6 +12,7 @@ from functools import wraps
 from typing import Optional, Callable, Any, Dict
 
 from .Log import LogEntry, LogLevel
+from dc_logger.client.base import get_global_logger
 from dc_logger.client.extractors import (
     EntityExtractor, 
     HTTPDetailsExtractor, 
@@ -139,6 +140,8 @@ def log_call(
             pass
         ```
     """
+    if not logger_getter:
+        logger_getter = get_global_logger()  ## TO DO
     # Merge direct parameters with config
     if config is None:
         config = LogDecoratorConfig(
