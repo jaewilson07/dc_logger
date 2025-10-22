@@ -66,7 +66,7 @@ class MultiHandler_LogConfig(LogConfig):
         batch_size: int = 100,
         flush_interval: int = 30,
         **kwargs
-    ) -> "MultiHandlerLogConfig":
+    ) -> "MultiHandler_LogConfig":
         """Create a multi-handler configuration with custom handlers"""
         handler_configs = [
             HandlerConfig(type=h["type"], config=h["config"]) for h in handlers
