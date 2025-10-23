@@ -176,6 +176,8 @@ class Logger:
             app_name=self.app_name,
             user=context.get("user"),
             action=context.get("action"),
+            level_name=context.get("level_name"),
+            method=context.get("method", "COMMENT"),
             entity=context.get("entity"),
             status=context.get("status", "info"),
             duration_ms=context.get("duration_ms"),
@@ -197,24 +199,29 @@ class Logger:
             await handler.write(entry)
     
     # Convenience methods for different log levels
-    async def debug(self, message: str, **context) -> bool:
-        """Log DEBUG level message"""
+    async def debug(self, message: str, method: str = "COMMENT", level_name: str = None, **context) -> bool:
+        """Log DEBUG level message with optional method and level_name"""
+        context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.DEBUG, message, **context)
     
-    async def info(self, message: str, **context) -> bool:
-        """Log INFO level message"""
+    async def info(self, message: str, method: str = "COMMENT", level_name: str = None, **context) -> bool:
+        """Log INFO level message with optional method and level_name"""
+        context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.INFO, message, **context)
     
-    async def warning(self, message: str, **context) -> bool:
-        """Log WARNING level message"""
+    async def warning(self, message: str, method: str = "COMMENT", level_name: str = None, **context) -> bool:
+        """Log WARNING level message with optional method and level_name"""
+        context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.WARNING, message, **context)
     
-    async def error(self, message: str, **context) -> bool:
-        """Log ERROR level message"""
+    async def error(self, message: str, method: str = "COMMENT", level_name: str = None, **context) -> bool:
+        """Log ERROR level message with optional method and level_name"""
+        context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.ERROR, message, **context)
 
-    async def critical(self, message: str, **context) -> bool:
-        """Log CRITICAL level message"""
+    async def critical(self, message: str, method: str = "COMMENT", level_name: str = None, **context) -> bool:
+        """Log CRITICAL level message with optional method and level_name"""
+        context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.CRITICAL, message, **context)
 
     def create_entry(self, level: LogLevel, message: str, **kwargs) -> LogEntry:
@@ -310,8 +317,40 @@ class Logger:
 _global_logger: Optional[Logger] = None
 
 
-def get_global_logger() -> Optional[Logger]:
-    """Get the global logger instance."""
+def get_global_logger() -> Logger:
+    """Get the global logger instance. Creates a default console logger if none exists."""
+    global _global_logger
+    
+    if _global_logger is None:
+        # Create a default console logger with text output
+        from dc_logger.services.console.base import ConsoleHandler, Console_ServiceConfig
+        
+        # Create console config for text output
+        console_config = Console_ServiceConfig(
+            output_mode="console",
+            output_type="text"
+        )
+        
+        # Create console handler
+        buffer_settings = Handler_BufferSettings()
+        console_handler = ConsoleHandler(
+            buffer_settings=buffer_settings,
+            service_config=console_config
+        )
+        
+        # Create handler instance
+        handler_instance = HandlerInstance(
+            service_handler=console_handler,
+            handler_name="default_console",
+            log_level=LogLevel.INFO
+        )
+        
+        # Create logger with default console handler
+        _global_logger = Logger(
+            handlers=[handler_instance],
+            app_name="default_app"
+        )
+    
     return _global_logger
 
 

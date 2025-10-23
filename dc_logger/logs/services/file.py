@@ -62,10 +62,40 @@ class FileHandler(ServiceHandler):
             raise LogHandlerError(f"OS error creating the directory {file_dir}: {e}")
             
     async def _write_json(self, entry: LogEntry) -> bool:
+        """Write log entry to JSON file, maintaining proper JSON array format."""
         try:
-            with open(self.file_path, self.append_mode, encoding="utf-8") as f:
-                json.dump(entry.to_dict(), f, ensure_ascii=False)
-                f.write("\n")
+            # Check if file exists and has content
+            file_exists = os.path.exists(self.file_path)
+            file_has_content = False
+            
+            if file_exists:
+                try:
+                    with open(self.file_path, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        file_has_content = len(content) > 0
+                except:
+                    file_has_content = False
+            
+            # Read existing logs if file exists and has content
+            existing_logs = []
+            if file_exists and file_has_content:
+                try:
+                    with open(self.file_path, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        if content:
+                            existing_logs = json.loads(content)
+                            if not isinstance(existing_logs, list):
+                                existing_logs = []
+                except (json.JSONDecodeError, FileNotFoundError):
+                    existing_logs = []
+            
+            # Add new entry
+            existing_logs.append(entry.to_dict())
+            
+            # Write back to file
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(existing_logs, f, indent=2, ensure_ascii=False, default=str)
+            
             return True
         except Exception as e:
             raise LogWriteError(f"Error writing JSON to file {self.file_path}: {e}")

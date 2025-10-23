@@ -345,6 +345,7 @@ class LogEntry:
     app_name: str = 'default'
     user: Optional[str] = None
     action: Optional[str] = None
+    level_name: Optional[str] = None
     entity: Optional[LogEntity] = None
     status: str = "info"
     duration_ms: Optional[int] = None
@@ -359,37 +360,63 @@ class LogEntry:
             self.method = self.http_details.method
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert LogEntry to dictionary for JSON serialization with proper formatting."""
         result = {
             "timestamp": self.timestamp,
             "level": self.level.value,
             "app_name": self.app_name,
             "message": self.message,
-            "user": self.user
-            or (
-                self.multi_tenant.user_id
-                if self.multi_tenant and self.multi_tenant.user_id
-                else None
-            ),
-            "method" : self.method,
-             "action": self.action,
+            "method": self.method,
             "status": self.status,
             "duration_ms": self.duration_ms,
-            "entity": self.entity.to_dict() if self.entity else None,
-            "correlation": self.correlation.__dict__ if self.correlation else None,
-            "multi_tenant": self.multi_tenant.__dict__ if self.multi_tenant else None,
-            "http_details": self.http_details.to_dict() if self.http_details else None,
-            "extra": self.extra,
         }
-        return {k: v for k, v in result.items() if v is not None}
+        
+        # Only include action if it's not None
+        if self.action is not None:
+            result["action"] = self.action
+            
+        # Only include level_name if it's not None
+        if self.level_name is not None:
+            result["level_name"] = self.level_name
+        
+        # Add user (with fallback to multi_tenant.user_id)
+        user = self.user
+        if not user and self.multi_tenant and self.multi_tenant.user_id:
+            user = self.multi_tenant.user_id
+        if user:
+            result["user"] = user
+        
+        # Add entity (serialize if present)
+        if self.entity:
+            result["entity"] = self.entity.to_dict()
+        
+        # Add correlation (serialize if present)
+        if self.correlation:
+            result["correlation"] = self.correlation.to_dict() if hasattr(self.correlation, 'to_dict') else self.correlation.__dict__
+        
+        # Add multi_tenant (serialize if present)
+        if self.multi_tenant:
+            result["multi_tenant"] = self.multi_tenant.to_dict() if hasattr(self.multi_tenant, 'to_dict') else self.multi_tenant.__dict__
+        
+        # Add http_details (serialize if present)
+        if self.http_details:
+            result["http_details"] = self.http_details.to_dict()
+        
+        # Add extra (only if not empty)
+        if self.extra:
+            result["extra"] = self.extra
+        
+        return result
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def create(cls, level: LogLevel, message: str, app_name: str = 'default', **kwargs) -> "Log":
+    def create(cls, level: LogLevel, message: str, app_name: str = 'default', **kwargs) -> "LogEntry":
         timestamp = dt.datetime.now().isoformat() + "Z"
         user = kwargs.get("user")
         action = kwargs.get("action")
+        level_name = kwargs.get("level_name")
         status = kwargs.get("status", "info")
         duration_ms = kwargs.get("duration_ms")
         method = kwargs.get("method", "COMMENT")  # Extract method from kwargs
@@ -420,6 +447,7 @@ class LogEntry:
             method=method,  # Pass method to constructor
             user=user,
             action=action,
+            level_name=level_name,
             entity=entity_obj,
             status=status,
             duration_ms=duration_ms,

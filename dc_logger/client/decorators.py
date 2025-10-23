@@ -12,6 +12,7 @@ from functools import wraps
 from typing import Optional, Callable, Any, Dict
 
 from .Log import LogEntry, LogLevel
+from dc_logger.client.base import get_global_logger
 from dc_logger.client.extractors import (
     EntityExtractor, 
     HTTPDetailsExtractor, 
@@ -30,6 +31,7 @@ class LogDecoratorConfig:
     def __init__(
         self,
         action_name: Optional[str] = None,
+        level_name: Optional[str] = None,
         log_level: LogLevel = LogLevel.INFO,
         entity_extractor: Optional[EntityExtractor] = None,
         http_extractor: Optional[HTTPDetailsExtractor] = None,
@@ -41,6 +43,7 @@ class LogDecoratorConfig:
         """
         Args:
             action_name: Custom action name for logs (defaults to function name)
+            level_name: Custom level name for logs (e.g., "get_data", "route_function")
             log_level: Minimum log level
             entity_extractor: Custom extractor for entity information
             http_extractor: Custom extractor for HTTP details
@@ -50,6 +53,7 @@ class LogDecoratorConfig:
             sensitive_params: List of parameter names to sanitize
         """
         self.action_name = action_name
+        self.level_name = level_name
         self.log_level = log_level
         
         # Dependency injection with default implementations
@@ -66,9 +70,11 @@ class LogDecoratorConfig:
 
 # %% ../../nbs/client/decorators.ipynb 6
 def log_call(
+    func: Optional[Callable] = None,
     logger: Optional[Any] = None,
     logger_getter: Optional[Callable[[], Any]] = None,
     action_name: Optional[str] = None,
+    level_name: Optional[str] = None,
     log_level: LogLevel = LogLevel.INFO,
     include_params: bool = False,
     sensitive_params: Optional[list] = None,
@@ -139,10 +145,53 @@ def log_call(
             pass
         ```
     """
+    # Handle both @log_call and @log_call(...) usage
+    if func is not None:
+        # Called as @log_call (without arguments)
+        return _create_log_call_decorator(
+            func=func,
+            logger=logger,
+            logger_getter=logger_getter,
+            action_name=action_name,
+            level_name=level_name,
+            log_level=log_level,
+            include_params=include_params,
+            sensitive_params=sensitive_params,
+            config=config
+        )
+    else:
+        # Called as @log_call(...) (with arguments)
+        def decorator(func):
+            return _create_log_call_decorator(
+                func=func,
+                logger=logger,
+                logger_getter=logger_getter,
+                action_name=action_name,
+                level_name=level_name,
+                log_level=log_level,
+                include_params=include_params,
+                sensitive_params=sensitive_params,
+                config=config
+            )
+        return decorator
+
+def _create_log_call_decorator(
+    func: Callable,
+    logger: Optional[Any] = None,
+    logger_getter: Optional[Callable[[], Any]] = None,
+    action_name: Optional[str] = None,
+    level_name: Optional[str] = None,
+    log_level: LogLevel = LogLevel.INFO,
+    include_params: bool = False,
+    sensitive_params: Optional[list] = None,
+    config: Optional[LogDecoratorConfig] = None,
+):
+    """Create the actual decorator with logger injection."""
     # Merge direct parameters with config
     if config is None:
         config = LogDecoratorConfig(
             action_name=action_name,
+            level_name=level_name,
             log_level=log_level,
             include_params=include_params,
             sensitive_params=sensitive_params
@@ -151,6 +200,8 @@ def log_call(
         # Override config with direct parameters if provided
         if action_name is not None:
             config.action_name = action_name
+        if level_name is not None:
+            config.level_name = level_name
         if log_level != LogLevel.INFO:  # If not default
             config.log_level = log_level
         if include_params:
@@ -158,15 +209,50 @@ def log_call(
         if sensitive_params is not None:
             config.sensitive_params = sensitive_params
     
-    def decorator(func):
-        @wraps(func)
-        async def async_wrapper(*args, **kwargs):
+    @wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        # Get the logger instance
+        if logger is None:
+            if logger_getter is not None:
+                injected_logger = logger_getter()
+            else:
+                from dc_logger.client.base import get_global_logger
+                injected_logger = get_global_logger()
+        else:
+            injected_logger = logger
+        
+        # Temporarily inject logger into the function's module globals
+        original_globals = func.__globals__.copy()
+        func.__globals__['logger'] = injected_logger
+        
+        try:
+            # Execute the function with logging
             return await _execute_with_logging(
                 func, args, kwargs, config, logger, logger_getter, is_async=True
             )
+        finally:
+            # Restore original globals
+            func.__globals__.clear()
+            func.__globals__.update(original_globals)
+    
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        # Get the logger instance
+        if logger is None:
+            if logger_getter is not None:
+                injected_logger = logger_getter()
+            else:
+                from dc_logger.client.base import get_global_logger
+                injected_logger = get_global_logger()
+        else:
+            injected_logger = logger
         
-        @wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        # Temporarily inject logger into the function's module globals
+        original_globals = func.__globals__.copy()
+        func.__globals__['logger'] = injected_logger
+        
+        try:
+            # Execute the function with logging
             import asyncio
             try:
                 loop = asyncio.get_event_loop()
@@ -182,10 +268,16 @@ def log_call(
                 return _execute_with_logging_sync(
                     func, args, kwargs, config, logger, logger_getter
                 )
-        
-        return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
+        finally:
+            # Restore original globals
+            func.__globals__.clear()
+            func.__globals__.update(original_globals)
     
-    return decorator
+    # Return the appropriate wrapper
+    if inspect.iscoroutinefunction(func):
+        return async_wrapper
+    else:
+        return sync_wrapper
 
 # %% ../../nbs/client/decorators.ipynb 8
 def _sanitize_params(kwargs: dict, sensitive_params: list) -> dict:
@@ -290,6 +382,7 @@ async def _execute_with_logging(
                     message=message,
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
+                    level_name=config.level_name,
                     **log_context,
                     **result_context,
                     extra=extra
@@ -305,6 +398,7 @@ async def _execute_with_logging(
                     message=message,
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
+                    level_name=config.level_name,
                     **log_context,
                     **result_context,
                     extra=extra
