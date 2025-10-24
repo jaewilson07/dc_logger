@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dc_logger"
-version = "0.1.0"
+version = "0.3.1-alpha"
 description = "A flexible logging library with support for cloud providers, multi-tenancy, and structured logging"
 readme = "README.md"
 requires-python = ">=3.8"
