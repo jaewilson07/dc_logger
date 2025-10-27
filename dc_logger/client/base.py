@@ -100,7 +100,7 @@ class HandlerInstance:
     log_level: LogLevel = LogLevel.INFO  # minimum log level to log.
 
     log_method: List[str] = field(
-        default_factory=lambda: ["POST", "PUT", "DELETE", "PATCH", "COMMENT"]
+        default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "PATCH", "COMMENT"]
     )
     # filtered list of API requests to log, generally won't log GET requests
 
