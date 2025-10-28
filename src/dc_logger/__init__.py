@@ -38,7 +38,7 @@ from .configs import (
 from .decorators import log_call, log_function_call, LogDecoratorConfig
 from .utils import extract_entity_from_args
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = [
     # Main logger
