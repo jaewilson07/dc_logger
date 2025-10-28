@@ -91,7 +91,7 @@ print(entry.to_json())
 
 ### With Decorator
 ```python
-from dc_logger.client.decorators import log_call
+from dc_logger import log_call
 
 @log_call()
 async def my_function():
@@ -113,8 +113,8 @@ handler = ConsoleHandler(
 
 ## 📖 Learning Path
 
-**Beginners**: Start with 01 → 02 → 03 → 04  
-**Intermediate**: 05 → 06 → 07  
+**Beginners**: Start with 01 → 02 → 03 → 04
+**Intermediate**: 05 → 06 → 07
 **Advanced**: 08 → 09
 
 ## 🔗 Additional Resources
@@ -129,4 +129,3 @@ handler = ConsoleHandler(
 - Each notebook is self-contained and can run independently
 - Check the test.ipynb for quick demonstrations
 - Modify examples to experiment with features
-
