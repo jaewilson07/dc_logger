@@ -1,8 +1,8 @@
 import json
 from typing import List
 
-from .base import LogHandler
 from ..client.models import LogEntry
+from .base import LogHandler
 
 
 class ConsoleHandler(LogHandler):

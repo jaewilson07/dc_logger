@@ -1,10 +1,8 @@
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
-from .base import LogConfig
-from .console import ConsoleLogConfig
-from .cloud import DatadogLogConfig
 from ..client.enums import LogLevel
+from .base import LogConfig
 
 
 @dataclass
@@ -20,13 +18,16 @@ class HandlerConfig:
             config=config,
         )
 
-        if hasattr(config, 'to_platform_config') and callable(getattr(config, 'to_platform_config')):
+        if hasattr(config, "to_platform_config") and callable(
+            getattr(config, "to_platform_config")
+        ):
             hc.platform_config = config.to_platform_config()
 
         return hc
 
+
 @dataclass
-class MultiHandler_LogConfig(LogConfig):
+class MultiHandlerLogConfig(LogConfig):
     """Configuration that supports multiple handlers simultaneously"""
 
     handlers: List[HandlerConfig] = field(default_factory=list)
@@ -65,8 +66,8 @@ class MultiHandler_LogConfig(LogConfig):
         level: LogLevel = LogLevel.INFO,
         batch_size: int = 100,
         flush_interval: int = 30,
-        **kwargs
-    ) -> "MultiHandler_LogConfig":
+        **kwargs,
+    ) -> "MultiHandlerLogConfig":
         """Create a multi-handler configuration with custom handlers"""
         handler_configs = [
             HandlerConfig(type=h["type"], config=h["config"]) for h in handlers
@@ -76,5 +77,5 @@ class MultiHandler_LogConfig(LogConfig):
             level=level,
             batch_size=batch_size,
             flush_interval=flush_interval,
-            **kwargs
+            **kwargs,
         )

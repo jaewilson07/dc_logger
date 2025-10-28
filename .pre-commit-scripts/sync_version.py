@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Sync version from pyproject.toml to __init__.py"""
 
-import tomllib
 import re
 from pathlib import Path
+
+import tomllib
 
 
 def sync_version():

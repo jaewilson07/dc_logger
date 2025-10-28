@@ -6,24 +6,24 @@ with support for multiple handlers, correlation tracking, and cloud integrations
 """
 
 import asyncio
-from typing import Optional, List
+from typing import List, Optional
 
-from .client.enums import LogLevel
-from .client.models import LogEntry
 from .client.correlation import correlation_manager
+from .client.enums import LogLevel
 from .client.exceptions import LogConfigError
+from .client.models import LogEntry
 from .configs.base import LogConfig
+from .configs.console import ConsoleLogConfig
 from .handlers.base import LogHandler
+from .handlers.cloud.aws import AWSCloudWatchHandler
+from .handlers.cloud.azure import AzureLogAnalyticsHandler
+from .handlers.cloud.datadog import DatadogHandler
+from .handlers.cloud.gcp import GCPLoggingHandler
 from .handlers.console import ConsoleHandler
 from .handlers.file import FileHandler
-from .handlers.cloud.datadog import DatadogHandler
-from .handlers.cloud.aws import AWSCloudWatchHandler
-from .handlers.cloud.gcp import GCPLoggingHandler
-from .handlers.cloud.azure import AzureLogAnalyticsHandler
-from .configs.console import ConsoleLogConfig
 
 
-class DC_Logger:
+class DCLogger:
     """Enhanced logger with structured logging and multiple handlers"""
 
     def __init__(self, config: LogConfig, app_name: str):
@@ -174,7 +174,6 @@ class DC_Logger:
     def end_request(self):
         """End current request context"""
         # Clear context variables (they'll be reset on next request)
-        pass
 
     async def close(self):
         """Clean up resources"""
@@ -195,20 +194,20 @@ class DC_Logger:
 
 
 # Global logger instance
-_global_logger: Optional[DC_Logger] = None
+_global_logger: Optional[DCLogger] = None
 
 
-def get_logger(app_name: str = "domolibrary") -> DC_Logger:
+def get_logger(app_name: str = "domolibrary") -> DCLogger:
     """Get or create the global logger instance"""
     global _global_logger
     if _global_logger is None:
         config = ConsoleLogConfig(level=LogLevel.INFO, pretty_print=False)
-        _global_logger = DC_Logger(config, app_name)
+        _global_logger = DCLogger(config, app_name)
 
     return _global_logger
 
 
-def set_global_logger(logger: DC_Logger):
+def set_global_logger(logger: DCLogger):
     """Set the global logger instance"""
     global _global_logger
     _global_logger = logger

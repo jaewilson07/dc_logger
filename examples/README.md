@@ -79,7 +79,7 @@ Complete examples demonstrating all functionality of the dc_logger library.
 
 ### Basic Logging
 ```python
-from dc_logger.client.Log import LogEntry, LogLevel
+from dc_logger.client.models import LogEntry, LogLevel
 
 entry = LogEntry.create(
     level=LogLevel.INFO,

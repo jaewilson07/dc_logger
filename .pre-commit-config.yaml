@@ -34,6 +34,13 @@ repos:
             args: ["--profile", "black"]
             files: ^src/
 
+    # Jupyter notebook cleaning
+    - repo: https://github.com/kynan/nbstripout
+      rev: 0.7.1
+      hooks:
+          - id: nbstripout
+            files: \.ipynb$
+
     # Linting
     - repo: https://github.com/astral-sh/ruff-pre-commit
       rev: v0.6.9
@@ -53,7 +60,7 @@ repos:
             language: system
             files: ^(pyproject\.toml|src/dc_logger/__init__\.py)$
             pass_filenames: false
-            
+
           - id: bandit
             name: bandit
             entry: python -m bandit

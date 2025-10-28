@@ -1,13 +1,12 @@
 import asyncio
-import socket
-import json
-from typing import List, Any, Dict
 import concurrent.futures
+import socket
+from typing import Any, List
 
-from .base import CloudHandler
-from ...client.models import LogEntry
 from ...client.enums import LogLevel
 from ...client.exceptions import LogHandlerError
+from ...client.models import LogEntry
+from .base import CloudHandler
 
 
 class DatadogHandler(CloudHandler):
@@ -31,7 +30,7 @@ class DatadogHandler(CloudHandler):
             # Get the IP address for more specific identification
             ip_address = socket.gethostbyname(hostname)
             return ip_address
-        except:
+        except Exception:
             # Fallback to localhost if hostname resolution fails
             return "127.0.0.1"
 
@@ -50,33 +49,33 @@ class DatadogHandler(CloudHandler):
         """Safely serialize objects for JSON, handling complex types"""
         if obj is None:
             return None
-        
+
         # Handle basic JSON-serializable types
         if isinstance(obj, (str, int, float, bool)):
             return obj
-        
+
         # Handle lists
         if isinstance(obj, list):
             return [self._safe_serialize(item) for item in obj]
-        
+
         # Handle dictionaries
         if isinstance(obj, dict):
             return {key: self._safe_serialize(value) for key, value in obj.items()}
-        
+
         # Handle objects with to_dict method
-        if hasattr(obj, 'to_dict') and callable(getattr(obj, 'to_dict')):
+        if hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict")):
             try:
                 return self._safe_serialize(obj.to_dict())
-            except:
+            except Exception:
                 return str(obj)
-        
+
         # Handle objects with __dict__
-        if hasattr(obj, '__dict__'):
+        if hasattr(obj, "__dict__"):
             try:
                 return self._safe_serialize(obj.__dict__)
-            except:
+            except Exception:
                 return str(obj)
-        
+
         # Fallback to string representation, truncated for large objects
         str_repr = str(obj)
         if len(str_repr) > 1000:
@@ -140,8 +139,17 @@ class DatadogHandler(CloudHandler):
                         "url": entry.http_details.url,
                         "status_code": entry.http_details.status_code,
                         "params": self._safe_serialize(entry.http_details.params),
-                        "request_body": self._safe_serialize(entry.http_details.request_body),
-                        "response_body": entry.http_details.response_body if isinstance(entry.http_details.response_body, (str, int, float, bool, type(None))) else str(entry.http_details.response_body)[:500],
+                        "request_body": self._safe_serialize(
+                            entry.http_details.request_body
+                        ),
+                        "response_body": (
+                            entry.http_details.response_body
+                            if isinstance(
+                                entry.http_details.response_body,
+                                (str, int, float, bool, type(None)),
+                            )
+                            else str(entry.http_details.response_body)[:500]
+                        ),
                         "response_size": entry.http_details.response_size,
                     }
 
@@ -155,11 +163,15 @@ class DatadogHandler(CloudHandler):
 
             # Debug: Print first log entry for troubleshooting
             if logs_data:
-                print(f"DatadogHandler: Sending {len(logs_data)} log entries to {intake_url}")
+                print(
+                    f"DatadogHandler: Sending {len(logs_data)} log entries to {intake_url}"
+                )
                 # Print a sample of the first log entry (truncated for readability)
                 sample_log = logs_data[0].copy()
                 if len(str(sample_log)) > 500:
-                    print(f"DatadogHandler: Sample log entry: {str(sample_log)[:500]}...")
+                    print(
+                        f"DatadogHandler: Sample log entry: {str(sample_log)[:500]}..."
+                    )
                 else:
                     print(f"DatadogHandler: Sample log entry: {sample_log}")
 
@@ -168,7 +180,9 @@ class DatadogHandler(CloudHandler):
             )
 
             if response.status_code in [200, 202]:
-                print(f"DatadogHandler: Successfully sent {len(logs_data)} log entries to Datadog")
+                print(
+                    f"DatadogHandler: Successfully sent {len(logs_data)} log entries to Datadog"
+                )
                 return True
             else:
                 print(

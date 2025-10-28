@@ -1,8 +1,8 @@
-from typing import List
 from abc import abstractmethod
+from typing import List
 
-from ...client.models import LogEntry
 from ...client.exceptions import LogWriteError
+from ...client.models import LogEntry
 from ..base import LogHandler
 
 

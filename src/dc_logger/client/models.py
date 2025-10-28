@@ -1,9 +1,11 @@
 import datetime as dt
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, Dict, Any, Literal
 from dataclasses import dataclass, field
 import json
 import uuid
 from contextvars import ContextVar
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Literal, Optional
 
 from .enums import LogLevel
 
@@ -15,7 +17,7 @@ LogMethod = Literal["POST", "PUT", "DELETE", "PATCH", "COMMENT", "GET"]
 class LogEntity:
     """Entity information for logging"""
 
-    type: str 
+    type: str
     id: Optional[str] = None
     name: Optional[str] = None
     additional_info: Dict[str, Any] = field(default_factory=dict)
@@ -57,7 +59,7 @@ class Entity:
         # This avoids duplication - use parent for full objects, additional_info for context
         if self.parent:
             return self.additional_info
-            
+
         additional_info = {}
         if hasattr(self.parent, "description"):
             additional_info["description"] = getattr(self.parent, "description", "")
@@ -84,62 +86,74 @@ class Entity:
         parent_dict = None
         if self.parent:
             parent_dict = self._serialize_parent(self.parent)
-        
+
         result = {
             "type": self.type,
             "id": self.id,
             "name": self.name,
         }
-        
+
         # Include parent if we have a full object, otherwise include additional_info for context
         if parent_dict:
             result["parent"] = parent_dict
         elif self.additional_info:
             result["additional_info"] = self.additional_info
-            
+
         return result
 
     def _serialize_parent(self, parent) -> Dict[str, Any]:
         """Safely serialize parent object to dictionary"""
         if parent is None:
             return None
-        
+
         # If parent has a to_dict method, use it
-        if hasattr(parent, 'to_dict') and callable(getattr(parent, 'to_dict')):
+        if hasattr(parent, "to_dict") and callable(getattr(parent, "to_dict")):
             try:
                 parent_dict = parent.to_dict()
                 # Add metadata about the parent object
-                parent_dict['_metadata'] = {
+                parent_dict["_metadata"] = {
                     "class_name": type(parent).__name__,
-                    "module": getattr(type(parent), '__module__', 'unknown')
+                    "module": getattr(type(parent), "__module__", "unknown"),
                 }
                 return parent_dict
-            except Exception as e:
+            except Exception:
                 # If to_dict fails, fall back to manual extraction
                 pass
-        
+
         # Extract key attributes from parent object
         parent_info = {
             "_metadata": {
                 "class_name": type(parent).__name__,
-                "module": getattr(type(parent), '__module__', 'unknown')
+                "module": getattr(type(parent), "__module__", "unknown"),
             }
         }
-        
+
         # Common attributes to extract from Domo entities
         common_attrs = [
-            'id', 'name', 'display_name', 'description', 'owner', 
-            'display_type', 'data_provider_type', 'row_count', 'column_count',
-            'created_dt', 'last_updated_dt', 'last_touched_dt',
-            'stream_id', 'cloud_id', 'formula', 'status'
+            "id",
+            "name",
+            "display_name",
+            "description",
+            "owner",
+            "display_type",
+            "data_provider_type",
+            "row_count",
+            "column_count",
+            "created_dt",
+            "last_updated_dt",
+            "last_touched_dt",
+            "stream_id",
+            "cloud_id",
+            "formula",
+            "status",
         ]
-        
+
         for attr in common_attrs:
             if hasattr(parent, attr):
                 value = getattr(parent, attr, None)
                 if value is not None:
                     # Handle datetime objects
-                    if hasattr(value, 'isoformat'):
+                    if hasattr(value, "isoformat"):
                         parent_info[attr] = value.isoformat()
                     # Handle simple types
                     elif isinstance(value, (str, int, float, bool)):
@@ -157,46 +171,60 @@ class Entity:
                             parent_info[attr] = str_value[:200] + "... (truncated)"
                         else:
                             parent_info[attr] = str_value
-        
+
         # Extract auth information if available
-        if hasattr(parent, 'auth') and parent.auth:
+        if hasattr(parent, "auth") and parent.auth:
             auth_info = {}
-            if hasattr(parent.auth, 'domo_instance'):
-                auth_info['domo_instance'] = parent.auth.domo_instance
-            if hasattr(parent.auth, 'user_id'):
-                auth_info['user_id'] = parent.auth.user_id
+            if hasattr(parent.auth, "domo_instance"):
+                auth_info["domo_instance"] = parent.auth.domo_instance
+            if hasattr(parent.auth, "user_id"):
+                auth_info["user_id"] = parent.auth.user_id
             if auth_info:
-                parent_info['auth'] = auth_info
-        
+                parent_info["auth"] = auth_info
+
         # If we didn't extract much useful info, include a summary
         if len(parent_info) <= 1:  # Only metadata
-            parent_info['summary'] = str(parent)[:500] + ("..." if len(str(parent)) > 500 else "")
-        
+            parent_info["summary"] = str(parent)[:500] + (
+                "..." if len(str(parent)) > 500 else ""
+            )
+
         # Special handling for common Domo classes that might not have to_dict
-        if hasattr(parent, '__class__'):
+        if hasattr(parent, "__class__"):
             class_name = type(parent).__name__
-            if 'DomoDataset' in class_name:
+            if "DomoDataset" in class_name:
                 # Extract specific DomoDataset attributes
                 dataset_attrs = [
-                    'id', 'name', 'description', 'owner', 'display_type', 'data_provider_type',
-                    'row_count', 'column_count', 'stream_id', 'cloud_id', 'created_dt', 
-                    'last_updated_dt', 'last_touched_dt'
+                    "id",
+                    "name",
+                    "description",
+                    "owner",
+                    "display_type",
+                    "data_provider_type",
+                    "row_count",
+                    "column_count",
+                    "stream_id",
+                    "cloud_id",
+                    "created_dt",
+                    "last_updated_dt",
+                    "last_touched_dt",
                 ]
                 for attr in dataset_attrs:
                     if hasattr(parent, attr) and attr not in parent_info:
                         value = getattr(parent, attr, None)
                         if value is not None:
-                            if hasattr(value, 'isoformat'):
+                            if hasattr(value, "isoformat"):
                                 parent_info[attr] = value.isoformat()
                             elif isinstance(value, (str, int, float, bool, dict)):
                                 parent_info[attr] = value
                             else:
                                 str_value = str(value)
                                 if len(str_value) > 200:
-                                    parent_info[attr] = str_value[:200] + "... (truncated)"
+                                    parent_info[attr] = (
+                                        str_value[:200] + "... (truncated)"
+                                    )
                                 else:
                                     parent_info[attr] = str_value
-        
+
         return parent_info
 
     @classmethod
@@ -251,7 +279,7 @@ class HTTPDetails:
             "params": self.params,
             "response_size": self.response_size,
             "request_body": self.request_body,
-            "response_body": self.response_body
+            "response_body": self.response_body,
         }
 
     @classmethod
@@ -263,14 +291,17 @@ class HTTPDetails:
             return cls(**http_details)
         elif isinstance(http_details, cls):
             return http_details
-        
+
         # Check for individual fields
-        if any(k in kwargs for k in ["method", "url", "status_code", "headers", "response_size"]):
+        if any(
+            k in kwargs
+            for k in ["method", "url", "status_code", "headers", "response_size"]
+        ):
             # Don't create HTTPDetails if method is COMMENT (not a real HTTP method)
             method = kwargs.get("method")
             if method == "COMMENT":
                 return None
-                
+
             return cls(
                 method=kwargs.get("method"),
                 url=kwargs.get("url"),
@@ -280,7 +311,7 @@ class HTTPDetails:
                 request_body=kwargs.get("request_body"),
                 response_body=kwargs.get("response_body"),
             )
-        
+
         return None
 
 
@@ -297,7 +328,7 @@ class Correlation:
         return {
             "trace_id": self.trace_id,
             "span_id": self.span_id,
-            "parent_span_id": self.parent_span_id
+            "parent_span_id": self.parent_span_id,
         }
 
 
@@ -340,10 +371,10 @@ class CorrelationManager:
         # Simple random session ID
         # Auth-based session ID generation can be implemented in domain-specific libraries
         return uuid.uuid4().hex[:12]
-    
+
     def get_or_create_correlation(self) -> Correlation:
         """Get or create correlation with automatic span chaining.
-        
+
         Each call creates a NEW span that chains to the previous span,
         enabling span-per-log microservices-style tracing.
         """
@@ -352,34 +383,34 @@ class CorrelationManager:
         if not current_trace_id:
             current_trace_id = self.generate_trace_id()
             self.trace_id_var.set(current_trace_id)
-        
+
         # Get previous span_id to set as parent
         previous_span_id = self._trace_span_history.get(current_trace_id)
-        
+
         # ALWAYS generate a NEW span_id for this log
         new_span_id = self.generate_span_id()
-        
+
         # Update context and history
         self.span_id_var.set(new_span_id)
         self._trace_span_history[current_trace_id] = new_span_id
-        
+
         # Create correlation with chaining
         correlation = Correlation(
             trace_id=current_trace_id,
             span_id=new_span_id,
-            parent_span_id=previous_span_id  # Chain to previous span
+            parent_span_id=previous_span_id,  # Chain to previous span
         )
         self.correlation_var.set(correlation)
-        
+
         return correlation
-    
+
     def start_new_trace(self) -> str:
         """Start a completely new trace (clear existing trace_id).
-        
+
         Use this to group separate bundles of logs:
         - Bundle 1: User login flow -> trace_A
         - Bundle 2: Data processing -> trace_B
-        
+
         Returns the new trace_id.
         """
         # Clear existing trace context
@@ -387,11 +418,11 @@ class CorrelationManager:
         self.request_id_var.set(None)
         self.span_id_var.set(None)
         self.correlation_var.set(None)
-        
+
         # Generate new trace_id (next log will use this)
         new_trace_id = self.generate_trace_id()
         self.trace_id_var.set(new_trace_id)
-        
+
         return new_trace_id
 
     def start_request(
@@ -486,11 +517,13 @@ class MultiTenant:
             "user_id": self.user_id,
             "session_id": self.session_id,
             "tenant_id": self.tenant_id,
-            "organization_id": self.organization_id
+            "organization_id": self.organization_id,
         }
 
     @classmethod
-    def from_kwargs(cls, kwargs: Dict[str, Any], user: Optional[str] = None) -> Optional["MultiTenant"]:
+    def from_kwargs(
+        cls, kwargs: Dict[str, Any], user: Optional[str] = None
+    ) -> Optional["MultiTenant"]:
         """Create MultiTenant from kwargs or individual fields"""
         # Check if multi_tenant is directly provided
         multi_tenant = kwargs.get("multi_tenant")
@@ -498,16 +531,19 @@ class MultiTenant:
             return cls(**multi_tenant)
         elif isinstance(multi_tenant, cls):
             return multi_tenant
-        
+
         # Check for individual fields
-        if any(k in kwargs for k in ["user_id", "session_id", "tenant_id", "organization_id"]):
+        if any(
+            k in kwargs
+            for k in ["user_id", "session_id", "tenant_id", "organization_id"]
+        ):
             return cls(
                 user_id=kwargs.get("user_id") or user,
                 session_id=kwargs.get("session_id"),
                 tenant_id=kwargs.get("tenant_id"),
                 organization_id=kwargs.get("organization_id"),
             )
-        
+
         return None
 
 
@@ -520,7 +556,7 @@ class LogEntry:
     level: LogLevel
     message: str
     method: LogMethod = "COMMENT"
-    app_name: str = 'default'
+    app_name: str = "default"
 
     # Business context
     user: Optional[str] = None
@@ -558,42 +594,50 @@ class LogEntry:
             "status": self.status,
             "duration_ms": self.duration_ms,
         }
-        
+
         # Only include action if it's not None
         if self.action is not None:
             result["action"] = self.action
-            
+
         # Only include level_name if it's not None
         if self.level_name is not None:
             result["level_name"] = self.level_name
-        
+
         # Add user (with fallback to multi_tenant.user_id)
         user = self.user
         if not user and self.multi_tenant and self.multi_tenant.user_id:
             user = self.multi_tenant.user_id
         if user:
             result["user"] = user
-        
+
         # Add entity (serialize if present)
         if self.entity:
             result["entity"] = self.entity.to_dict()
-        
+
         # Add correlation (serialize if present)
         if self.correlation:
-            result["correlation"] = self.correlation.to_dict() if hasattr(self.correlation, 'to_dict') else self.correlation.__dict__
-        
+            result["correlation"] = (
+                self.correlation.to_dict()
+                if hasattr(self.correlation, "to_dict")
+                else self.correlation.__dict__
+            )
+
         # Add multi_tenant (serialize if present)
         if self.multi_tenant:
-            result["multi_tenant"] = self.multi_tenant.to_dict() if hasattr(self.multi_tenant, 'to_dict') else self.multi_tenant.__dict__
-        
+            result["multi_tenant"] = (
+                self.multi_tenant.to_dict()
+                if hasattr(self.multi_tenant, "to_dict")
+                else self.multi_tenant.__dict__
+            )
+
         # Add http_details (serialize if present)
         if self.http_details:
             result["http_details"] = self.http_details.to_dict()
-        
+
         # Add extra (only if not empty)
         if self.extra:
             result["extra"] = self.extra
-        
+
         return result
 
     def to_json(self) -> str:
@@ -601,7 +645,9 @@ class LogEntry:
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def create(cls, level: LogLevel, message: str, app_name: str = 'default', **kwargs) -> "LogEntry":
+    def create(
+        cls, level: LogLevel, message: str, app_name: str = "default", **kwargs
+    ) -> "LogEntry":
         """Factory method to create a LogEntry with current timestamp"""
         timestamp = dt.datetime.now().isoformat() + "Z"
         user = kwargs.get("user")
@@ -613,7 +659,7 @@ class LogEntry:
         extra = kwargs.get("extra", {})
 
         entity_obj = LogEntity.from_any(kwargs.get("entity"))
-        
+
         # Handle correlation - can be dict or Correlation object
         correlation_param = kwargs.get("correlation")
         if isinstance(correlation_param, Correlation):
@@ -622,7 +668,7 @@ class LogEntry:
             correlation_obj = Correlation(**correlation_param)
         else:
             correlation_obj = None
-            
+
         multi_tenant_obj = MultiTenant.from_kwargs(kwargs, user)
         http_details_obj = HTTPDetails.from_kwargs(kwargs)
 
