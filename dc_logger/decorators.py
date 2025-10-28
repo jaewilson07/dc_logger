@@ -316,6 +316,10 @@ async def _execute_with_logging(
     http_details = config.http_extractor.extract(func, args, kwargs)
     multi_tenant = config.multitenant_extractor.extract(func, args, kwargs)
     
+    # Only include HTTP details if they're actually HTTP-related (not COMMENT)
+    if http_details and http_details.method == "COMMENT":
+        http_details = None
+    
     # Get caller information
     caller_frame = inspect.currentframe().f_back.f_back
     caller_info = {
@@ -329,8 +333,11 @@ async def _execute_with_logging(
         "action": config.action_name or func.__qualname__,
         "entity": entity,
         "multi_tenant": multi_tenant,
-        "http_details": http_details,
     }
+    
+    # Only include http_details if it's not None (i.e., not COMMENT method)
+    if http_details is not None:
+        log_context["http_details"] = http_details
     
     extra = {
         "function": func.__qualname__,
@@ -479,6 +486,10 @@ def _execute_with_logging_sync(
             http_details = config.http_extractor.extract(func, args, kwargs)
             multi_tenant = config.multitenant_extractor.extract(func, args, kwargs)
             
+            # Only include HTTP details if they're actually HTTP-related (not COMMENT)
+            if http_details and http_details.method == "COMMENT":
+                http_details = None
+            
             # Manually generate correlation if logger has correlation_manager
             correlation = None
             if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
@@ -502,11 +513,14 @@ def _execute_with_logging_sync(
                 action=config.action_name or func.__qualname__,
                 entity=entity,
                 multi_tenant=multi_tenant,
-                http_details=http_details,
                 duration_ms=duration_ms,
                 status="success",
                 correlation=correlation
             )
+            
+            # Only add http_details if it's not None (i.e., not COMMENT method)
+            if http_details is not None:
+                entry.http_details = http_details
             
             # Run async write in sync context
             if hasattr(logger, 'write'):
@@ -534,6 +548,10 @@ def _execute_with_logging_sync(
             entity = config.entity_extractor.extract(func, args, kwargs)
             http_details = config.http_extractor.extract(func, args, kwargs)
             multi_tenant = config.multitenant_extractor.extract(func, args, kwargs)
+            
+            # Only include HTTP details if they're actually HTTP-related (not COMMENT)
+            if http_details and http_details.method == "COMMENT":
+                http_details = None
             
             # Manually generate correlation if logger has correlation_manager
             correlation = None

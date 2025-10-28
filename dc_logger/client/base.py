@@ -175,22 +175,27 @@ class Logger:
             context['correlation'] = correlation
         
         # Create log entry
-        entry = LogEntry.create(
-            level=level,
-            message=message,
-            app_name=self.app_name,
-            user=context.get("user"),
-            action=context.get("action"),
-            level_name=context.get("level_name"),
-            method=context.get("method", "COMMENT"),
-            entity=context.get("entity"),
-            status=context.get("status", "info"),
-            duration_ms=context.get("duration_ms"),
-            correlation=context.get("correlation"),
-            multi_tenant=context.get("multi_tenant"),
-            http_details=context.get("http_details"),
-            extra=context.get("extra", {}),
-        )
+        entry_kwargs = {
+            "level": level,
+            "message": message,
+            "app_name": self.app_name,
+            "user": context.get("user"),
+            "action": context.get("action"),
+            "level_name": context.get("level_name"),
+            "method": context.get("method", "COMMENT"),
+            "entity": context.get("entity"),
+            "status": context.get("status", "info"),
+            "duration_ms": context.get("duration_ms"),
+            "correlation": context.get("correlation"),
+            "multi_tenant": context.get("multi_tenant"),
+            "extra": context.get("extra", {}),
+        }
+        
+        # Only include http_details if it's not None
+        if context.get("http_details") is not None:
+            entry_kwargs["http_details"] = context.get("http_details")
+        
+        entry = LogEntry.create(**entry_kwargs)
         
         # Write to all handlers (handlers manage their own buffering)
         for handler in self.handlers:

@@ -266,6 +266,11 @@ class HTTPDetails:
         
         # Check for individual fields
         if any(k in kwargs for k in ["method", "url", "status_code", "headers", "response_size"]):
+            # Don't create HTTPDetails if method is COMMENT (not a real HTTP method)
+            method = kwargs.get("method")
+            if method == "COMMENT":
+                return None
+                
             return cls(
                 method=kwargs.get("method"),
                 url=kwargs.get("url"),

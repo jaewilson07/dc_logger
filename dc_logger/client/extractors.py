@@ -113,7 +113,7 @@ class KwargsHTTPDetailsExtractor(HTTPDetailsExtractor):
             elif isinstance(hd, dict):
                 return HTTPDetails(**hd)
         
-        # Otherwise, try to construct from common kwargs
+        # Check kwargs first
         if any(k in kwargs for k in ["method", "url", "headers"]):
             return HTTPDetails(
                 method=kwargs.get("method"),
@@ -121,6 +121,30 @@ class KwargsHTTPDetailsExtractor(HTTPDetailsExtractor):
                 headers=kwargs.get("headers"),
                 params=kwargs.get("params"),
                 request_body=kwargs.get("body") or kwargs.get("request_body"),
+            )
+        
+        # If not in kwargs, check function default parameters
+        import inspect
+        sig = inspect.signature(func)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        
+        # Check if any HTTP-related parameters have non-None values
+        http_params = {}
+        for param_name in ["method", "url", "headers", "params", "body", "request_body"]:
+            if param_name in bound_args.arguments:
+                value = bound_args.arguments[param_name]
+                if value is not None:
+                    http_params[param_name] = value
+        
+        # If we found HTTP parameters, create HTTPDetails
+        if http_params:
+            return HTTPDetails(
+                method=http_params.get("method"),
+                url=http_params.get("url"),
+                headers=http_params.get("headers"),
+                params=http_params.get("params"),
+                request_body=http_params.get("body") or http_params.get("request_body"),
             )
         
         return None
