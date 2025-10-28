@@ -91,7 +91,7 @@ print(entry.to_json())
 
 ### With Decorator
 ```python
-from dc_logger.client.decorators import log_call
+from dc_logger import log_call
 
 @log_call()
 async def my_function():
