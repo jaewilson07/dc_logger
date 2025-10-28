@@ -147,7 +147,7 @@ class Logger:
     
     handlers: List[HandlerInstance] = field(default_factory=list)
     app_name: Optional[str] = "default_app"
-    show_debugging: bool = False  #- True shows DEBUG, False filters it
+    show_debugging: bool = False  # True shows DEBUG, False filters it
     
     # Correlation manager (auto-initialized)
     correlation_manager: Optional[CorrelationManager] = field(default_factory=CorrelationManager)
