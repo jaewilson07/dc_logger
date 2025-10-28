@@ -14,7 +14,7 @@ import concurrent.futures
 from dc_logger.services.base import LogEntry
 from dc_logger.client.exceptions import LogHandlerError,LogConfigError
 from dc_logger.services.cloud.base import CloudHandler,CloudServiceConfig 
-from dc_logger.client.Log import LogLevel
+from dc_logger.client.models import LogLevel
 # from ...client.models import LogEntry
 # from ...client.enums import LogLevel
 # from ...client.exceptions import LogHandlerError

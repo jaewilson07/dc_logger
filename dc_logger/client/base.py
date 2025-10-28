@@ -51,7 +51,7 @@ class ServiceHandler(ABC):
 
     buffer_settings: Handler_BufferSettings
 
-    service_config: Optional[ServiceConfig] = None # has authentication and connection details to service1
+    service_config: Optional[ServiceConfig] = None 
 
     buffer : List[LogEntry] = field(default_factory = lambda: list )
 

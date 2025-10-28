@@ -10,7 +10,7 @@ This example demonstrates the new enhanced logging features:
 
 import asyncio
 from dc_logger import log_call
-from dc_logger.client.Log import LogLevel
+from dc_logger.client.models import LogLevel
 from dc_logger.client.base import Logger, HandlerInstance, Handler_BufferSettings, set_global_logger
 from dc_logger.services.console.base import ConsoleHandler, Console_ServiceConfig
 
