@@ -12,11 +12,11 @@ from .base import CloudHandler
 class DatadogHandler(CloudHandler):
     """Datadog log handler using direct HTTP API"""
 
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         super().__init__(config)
         self._validate_config()
 
-    def _validate_config(self):
+    def _validate_config(self) -> None:
         """Validate Datadog configuration"""
         api_key = self.cloud_config.get("api_key")
         if not api_key:
@@ -201,10 +201,10 @@ class DatadogHandler(CloudHandler):
     async def _send_to_cloud(self, entries: List[LogEntry]) -> bool:
         """Send log entries to Datadog using direct HTTP API"""
 
-        def submit_logs():
+        def submit_logs() -> Any:
             return self._send_logs_simple_api(entries)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(submit_logs)
             result = await asyncio.wrap_future(future)
-            return result
+            return bool(result)

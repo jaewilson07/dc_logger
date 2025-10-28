@@ -93,11 +93,9 @@ class ConsoleHandler(ServiceHandler):
             entries = [entries]
 
         # Get output type from config
-        output_type = (
-            self.service_config.output_type
-            if hasattr(self.service_config, "output_type")
-            else "text"
-        )
+        output_type = "text"  # default
+        if self.service_config and hasattr(self.service_config, "output_type"):
+            output_type = self.service_config.output_type
 
         try:
             for entry in entries:

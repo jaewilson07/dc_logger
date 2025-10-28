@@ -14,7 +14,7 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from .models import CorrelationManager, LogEntry, LogLevel
 
@@ -26,9 +26,9 @@ OutputMode = Literal["cloud", "console", "file", "multi"]
 class ServiceConfig(ABC):
     """abstract base class for service-specific configuration settings"""
 
-    output_mode: OutputMode
+    output_mode: OutputMode = "console"  # Default to file mode
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.validate_config()
 
     @abstractmethod
@@ -56,7 +56,7 @@ class ServiceHandler(ABC):
         None  # has authentication and connection details to service1
     )
 
-    buffer: List[LogEntry] = field(default_factory=lambda: list)
+    buffer: List[LogEntry] = field(default_factory=list)
 
     # @classmethod
     # def from_config(cls, service_config: ServiceConfig):
@@ -84,7 +84,7 @@ class ServiceHandler(ABC):
     async def flush(self) -> bool:
         """Flush any buffered entries"""
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources"""
 
 
@@ -94,7 +94,7 @@ class HandlerInstance:
 
     service_handler: ServiceHandler
 
-    handler_name: str = None  # friendly name for the handler
+    handler_name: Optional[str] = None  # friendly name for the handler
 
     log_level: LogLevel = LogLevel.INFO  # minimum log level to log.
 
@@ -103,7 +103,7 @@ class HandlerInstance:
     )
     # filtered list of API requests to log, generally won't log GET requests
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.handler_name:
             self.handler_name = f"{self.service_handler.__class__.__name__}"
         self.validate_config()
@@ -133,7 +133,7 @@ class HandlerInstance:
         """Flush any buffered entries"""
         return await self.service_handler.flush()
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources"""
         await self.service_handler.close()
 
@@ -151,7 +151,7 @@ class Logger:
         default_factory=CorrelationManager
     )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize correlation manager and set handler log levels based on show_debugging"""
         if self.correlation_manager is None:
             self.correlation_manager = CorrelationManager()
@@ -161,7 +161,7 @@ class Logger:
         for handler in self.handlers:
             handler.log_level = debug_level
 
-    async def log(self, level: LogLevel, message: str, **context) -> bool:
+    async def log(self, level: LogLevel, message: str, **context: Any) -> bool:
         """Core logging method - creates entry with auto-correlation and writes to handlers"""
 
         # Check if we should log this level - only filter DEBUG when show_debugging=False
@@ -202,48 +202,68 @@ class Logger:
 
         return True
 
-    async def write(self, entry: LogEntry):
+    async def write(self, entry: LogEntry) -> None:
         """Direct write - for compatibility"""
         for handler in self.handlers:
             await handler.write(entry)
 
     # Convenience methods for different log levels
     async def debug(
-        self, message: str, method: str = "COMMENT", level_name: str = None, **context
+        self,
+        message: str,
+        method: str = "COMMENT",
+        level_name: Optional[str] = None,
+        **context: Any,
     ) -> bool:
         """Log DEBUG level message with optional method and level_name"""
         context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.DEBUG, message, **context)
 
     async def info(
-        self, message: str, method: str = "COMMENT", level_name: str = None, **context
+        self,
+        message: str,
+        method: str = "COMMENT",
+        level_name: Optional[str] = None,
+        **context: Any,
     ) -> bool:
         """Log INFO level message with optional method and level_name"""
         context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.INFO, message, **context)
 
     async def warning(
-        self, message: str, method: str = "COMMENT", level_name: str = None, **context
+        self,
+        message: str,
+        method: str = "COMMENT",
+        level_name: Optional[str] = None,
+        **context: Any,
     ) -> bool:
         """Log WARNING level message with optional method and level_name"""
         context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.WARNING, message, **context)
 
     async def error(
-        self, message: str, method: str = "COMMENT", level_name: str = None, **context
+        self,
+        message: str,
+        method: str = "COMMENT",
+        level_name: Optional[str] = None,
+        **context: Any,
     ) -> bool:
         """Log ERROR level message with optional method and level_name"""
         context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.ERROR, message, **context)
 
     async def critical(
-        self, message: str, method: str = "COMMENT", level_name: str = None, **context
+        self,
+        message: str,
+        method: str = "COMMENT",
+        level_name: Optional[str] = None,
+        **context: Any,
     ) -> bool:
         """Log CRITICAL level message with optional method and level_name"""
         context.update({"method": method, "level_name": level_name})
         return await self.log(LogLevel.CRITICAL, message, **context)
 
-    def create_entry(self, level: LogLevel, message: str, **kwargs) -> LogEntry:
+    def create_entry(self, level: LogLevel, message: str, **kwargs: Any) -> LogEntry:
         """Create a LogEntry without logging it (for manual control)"""
         # Auto-generate or get existing correlation
         if self.correlation_manager and "correlation" not in kwargs:
@@ -251,7 +271,7 @@ class Logger:
             kwargs["correlation"] = correlation
 
         entry = LogEntry.create(
-            level=level, message=message, app_name=self.app_name, **kwargs
+            level=level, message=message, app_name=self.app_name or "default", **kwargs
         )
         return entry
 
@@ -272,7 +292,7 @@ class Logger:
     def start_request(
         self,
         parent_trace_id: Optional[str] = None,
-        auth=None,
+        auth: Any = None,
         is_pagination_request: bool = False,
     ) -> str:
         """Start a new request context and return request ID"""
@@ -282,7 +302,7 @@ class Logger:
             parent_trace_id, auth, is_pagination_request
         )
 
-    def end_request(self):
+    def end_request(self) -> None:
         """End the current request context (also clears trace)"""
         # Clear context variables for this request
         if self.correlation_manager:
@@ -291,7 +311,7 @@ class Logger:
             self.correlation_manager.span_id_var.set(None)
             self.correlation_manager.correlation_var.set(None)
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources"""
         # Close all handlers
         for handler in self.handlers:

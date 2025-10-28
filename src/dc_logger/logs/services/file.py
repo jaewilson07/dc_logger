@@ -10,11 +10,11 @@ from dc_logger.client.base import LogEntry, ServiceConfig, ServiceHandler
 from dc_logger.client.exceptions import LogConfigError, LogHandlerError, LogWriteError
 
 
-@dataclass(kw_only=True)
+@dataclass
 class FileServiceConfig(ServiceConfig):
     """Configuration for file-based logging output"""
 
-    destination: str
+    destination: str = ""  # Will be validated in validate_config
     output_mode: Literal["file"] = "file"
     format: Literal["json", "text", "csv"] = "text"
     append: bool = True  # optional flag for overwrite or append
@@ -31,14 +31,18 @@ class FileServiceConfig(ServiceConfig):
 class FileHandler(ServiceHandler):
     """Handler for file output"""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize file handler after dataclass initialization"""
+        if not self.service_config:
+            raise LogHandlerError("Service config is required for FileHandler")
+        if not isinstance(self.service_config, FileServiceConfig):
+            raise LogHandlerError("FileHandler requires FileServiceConfig")
         self.service_config.validate_config()
         self.file_path = self.service_config.destination
         self.append_mode = "a" if self.service_config.append else "w"
         self._ensure_directory_exists()
 
-    def _ensure_directory_exists(self):
+    def _ensure_directory_exists(self) -> None:
         """Create parent directories in case they don't exist."""
         file_dir = os.path.dirname(self.file_path)
         if not file_dir:
@@ -133,7 +137,7 @@ class FileHandler(ServiceHandler):
 
     def _flatten_dict(self, d: dict, parent_key: str = "", sep: str = ".") -> dict:
         """Flatten nested dictionaries into dot notation"""
-        items = []
+        items: List[tuple] = []
         for k, v in d.items():
             new_key = f"{parent_key}{sep}{k}" if parent_key else k
             if isinstance(v, dict) and v:
@@ -151,11 +155,13 @@ class FileHandler(ServiceHandler):
             flattened_entry = self._flatten_dict(entry_dict)
 
             # Get existing fieldnames if file exists
-            existing_fieldnames = []
+            existing_fieldnames: List[str] = []
             if file_exists and os.path.getsize(self.file_path) > 0:
                 with open(self.file_path, newline="", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
-                    existing_fieldnames = reader.fieldnames or []
+                    existing_fieldnames = (
+                        list(reader.fieldnames) if reader.fieldnames else []
+                    )
 
             # Merge existing fieldnames with new ones, preserving order
             # Priority order: timestamp, level, app_name, message first
@@ -185,7 +191,7 @@ class FileHandler(ServiceHandler):
                     existing_data = list(reader)
 
                 # Rewrite file with new headers
-                with open(self.file_path, "w", newline="", encoding="utf-8") as f:
+                with open(self.file_path, "w", newline="", encoding="utf-8") as f:  # type: ignore
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
                     for row in existing_data:
@@ -195,7 +201,7 @@ class FileHandler(ServiceHandler):
                 # Normal append or new file
                 with open(
                     self.file_path, self.append_mode, newline="", encoding="utf-8"
-                ) as f:
+                ) as f:  # type: ignore
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     if not file_exists or os.path.getsize(self.file_path) == 0:
                         writer.writeheader()
@@ -213,6 +219,10 @@ class FileHandler(ServiceHandler):
             entries = [entries]
 
         try:
+            if not self.service_config:
+                raise LogHandlerError("Service config is required for FileHandler")
+            if not isinstance(self.service_config, FileServiceConfig):
+                raise LogHandlerError("FileHandler requires FileServiceConfig")
             output_format = self.service_config.format
 
             for entry in entries:

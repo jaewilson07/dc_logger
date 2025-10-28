@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List
+from typing import Any, List
 
 from ...client.exceptions import LogWriteError
 from ...client.models import LogEntry
@@ -9,7 +9,7 @@ from ..base import LogHandler
 class CloudHandler(LogHandler):
     """Base class for cloud log handlers"""
 
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         super().__init__(config)
         self.cloud_config = config.to_platform_config()
         config.validate_config()

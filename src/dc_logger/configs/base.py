@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional
 from ..client.enums import LogLevel
 
 # Type for valid output modes
-OutputMode = Literal["cloud", "console", "file"]
+OutputMode = Literal["cloud", "console", "file", "multi"]
 
 
 @dataclass
@@ -13,7 +13,7 @@ class LogConfig(ABC):
     """Abstract base configuration for logging system"""
 
     level: LogLevel = LogLevel.INFO
-    output_mode: OutputMode = "console"  # cloud, console, or file
+    output_mode: OutputMode = "console"  # cloud, console, file, or multi
     format: str = "json"  # json, text
     destination: Optional[str] = None  # file path, webhook URL, etc.
     batch_size: int = 100
@@ -26,6 +26,11 @@ class LogConfig(ABC):
     @abstractmethod
     def validate_config(self) -> bool:
         """Validate the configuration"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def to_platform_config(self) -> Dict[str, Any]:
+        """Convert to platform-specific configuration"""
         raise NotImplementedError()
 
     def get_handler_configs(self) -> List[Dict[str, Any]]:

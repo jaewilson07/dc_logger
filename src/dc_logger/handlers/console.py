@@ -21,7 +21,7 @@ class ConsoleHandler(LogHandler):
                         print(entry.to_json())
                 else:
                     print(
-                        f"[{entry.timestamp}] {entry.level.value} {entry.logger}: {entry.message}"
+                        f"[{entry.timestamp}] {entry.level.value} {entry.app_name}: {entry.message}"
                     )
             return True
         except Exception as e:

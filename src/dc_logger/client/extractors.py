@@ -207,8 +207,10 @@ class DefaultResultProcessor(ResultProcessor):
                 result_context["result"] = (
                     f"<{type(result).__name__} with {len(result)} items>"
                 )
-            elif isinstance(result, (str, int, float, bool, type(None))):
-                result_context["result"] = result
+            elif isinstance(result, (str, int, float, bool)):
+                result_context["result"] = str(result)
+            elif result is None:
+                result_context["result"] = "None"
             else:
                 result_context["result"] = f"<{type(result).__name__}>"
 
