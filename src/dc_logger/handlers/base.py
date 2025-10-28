@@ -21,6 +21,6 @@ class LogHandler(ABC):
         """Flush any buffered entries"""
         pass
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources"""
         pass

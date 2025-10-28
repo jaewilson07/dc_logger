@@ -1,12 +1,16 @@
 import inspect
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from .client.models import Entity, LogEntity
 
 
-def _find_calling_context() -> dict:
+def _find_calling_context() -> Dict[str, Any]:
     """Walk up the call stack to find calling context and Domo entity objects"""
-    result = {"entity": None, "calling_chain": [], "primary_caller": None}
+    result: Dict[str, Any] = {
+        "entity": None,
+        "calling_chain": [],
+        "primary_caller": None,
+    }
 
     try:
         # Get the current frame and walk up the stack
@@ -87,7 +91,9 @@ def _find_calling_entity() -> Optional[LogEntity]:
     return context.get("entity")
 
 
-def create_dynamic_action_name(base_action: str, calling_context: dict = None) -> str:
+def create_dynamic_action_name(
+    base_action: str, calling_context: Optional[Dict[str, Any]] = None
+) -> str:
     """Create a dynamic action name that includes calling context"""
     if calling_context is None:
         calling_context = _find_calling_context()
@@ -106,7 +112,7 @@ def create_dynamic_action_name(base_action: str, calling_context: dict = None) -
         return base_action
 
 
-def _is_domo_entity(obj) -> bool:
+def _is_domo_entity(obj: Any) -> bool:
     """Check if an object is a Domo entity (has id and auth attributes)"""
     return (
         hasattr(obj, "id")
@@ -123,11 +129,11 @@ def _extract_entity_id_from_params(kwargs: dict) -> Optional[tuple]:
             # Convert parameter name to entity type (e.g., dataset_id -> dataset)
             entity_type = param_name.replace("_id", "")
             return entity_type, param_value
-    return None, None
+    return None
 
 
 def enhance_entity_from_response(
-    entity: Optional[LogEntity], result
+    entity: Optional[LogEntity], result: Any
 ) -> Optional[LogEntity]:
     """Enhance entity information from function response data - works for any entity type"""
     if not entity or not hasattr(result, "response"):
@@ -183,17 +189,19 @@ def enhance_entity_from_response(
     return entity
 
 
-def extract_entity_from_args(args, kwargs) -> Optional[LogEntity]:
+def extract_entity_from_args(args: Any, kwargs: Any) -> Optional[LogEntity]:
     """Extract entity information from function arguments and call stack"""
 
     # 1. Check if any argument is a Domo entity object
     for arg in args:
         if _is_domo_entity(arg):
-            return Entity.from_domo_entity(arg)
+            entity = Entity.from_domo_entity(arg)
+            return LogEntity.from_entity(entity) if entity else None
 
     # 2. Check for 'self' parameter which might be a Domo entity (for class methods)
     if args and _is_domo_entity(args[0]):
-        return Entity.from_domo_entity(args[0])
+        entity = Entity.from_domo_entity(args[0])
+        return LogEntity.from_entity(entity) if entity else None
 
     # 3. Walk up the call stack to find Domo entity objects
     # This is crucial for get_data calls from DomoDataset methods
@@ -202,7 +210,11 @@ def extract_entity_from_args(args, kwargs) -> Optional[LogEntity]:
         return calling_entity
 
     # 4. Extract basic entity info from parameters (for route functions)
-    entity_type, entity_id = _extract_entity_id_from_params(kwargs)
+    result = _extract_entity_id_from_params(kwargs)
+    entity_type = None
+    entity_id = None
+    if result:
+        entity_type, entity_id = result
 
     if entity_type and entity_id:
         additional_info = {}
@@ -217,12 +229,11 @@ def extract_entity_from_args(args, kwargs) -> Optional[LogEntity]:
         if auth and hasattr(auth, "domo_instance"):
             additional_info["domo_instance"] = auth.domo_instance
 
-        return Entity(
+        return LogEntity(
             type=entity_type,
             id=entity_id,
             name=None,  # Will be populated from response if available
             additional_info=additional_info,
-            parent=None,
         )
 
     return None

@@ -1,6 +1,4 @@
 import datetime as dt
-from typing import Optional, Dict, Any, Literal
-from dataclasses import dataclass, field
 import json
 import uuid
 from contextvars import ContextVar
@@ -23,12 +21,24 @@ class LogEntity:
     additional_info: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_any(cls, obj):
+    def from_any(cls, obj: Any) -> Optional["LogEntity"]:
         if isinstance(obj, dict) and obj:
             return cls(**obj)
         elif isinstance(obj, cls):
             return obj
         return None
+
+    @classmethod
+    def from_entity(cls, entity: "Entity") -> Optional["LogEntity"]:
+        """Convert Entity to LogEntity"""
+        if not entity:
+            return None
+        return cls(
+            type=entity.type,
+            id=entity.id,
+            name=entity.name,
+            additional_info=entity.additional_info,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -49,7 +59,9 @@ class Entity:
     additional_info: Dict[str, Any] = field(default_factory=dict)
     parent: Any = None  # instance of a class
 
-    def get_additional_info(self, info_fn: Callable = None):
+    def get_additional_info(
+        self, info_fn: Optional[Callable[..., Any]] = None
+    ) -> Dict[str, Any]:
         """Populate additional_info when we don't have a full parent object"""
         if info_fn:
             self.additional_info = info_fn(self)
@@ -87,10 +99,10 @@ class Entity:
         if self.parent:
             parent_dict = self._serialize_parent(self.parent)
 
-        result = {
+        result: Dict[str, Any] = {
             "type": self.type,
-            "id": self.id,
-            "name": self.name,
+            "id": self.id or "",
+            "name": self.name or "",
         }
 
         # Include parent if we have a full object, otherwise include additional_info for context
@@ -101,7 +113,7 @@ class Entity:
 
         return result
 
-    def _serialize_parent(self, parent) -> Dict[str, Any]:
+    def _serialize_parent(self, parent: Any) -> Optional[Dict[str, Any]]:
         """Safely serialize parent object to dictionary"""
         if parent is None:
             return None
@@ -109,7 +121,7 @@ class Entity:
         # If parent has a to_dict method, use it
         if hasattr(parent, "to_dict") and callable(getattr(parent, "to_dict")):
             try:
-                parent_dict = parent.to_dict()
+                parent_dict = parent.to_dict()  # type: ignore
                 # Add metadata about the parent object
                 parent_dict["_metadata"] = {
                     "class_name": type(parent).__name__,
@@ -121,7 +133,7 @@ class Entity:
                 pass
 
         # Extract key attributes from parent object
-        parent_info = {
+        parent_info: Dict[str, Any] = {
             "_metadata": {
                 "class_name": type(parent).__name__,
                 "module": getattr(type(parent), "__module__", "unknown"),
@@ -228,7 +240,9 @@ class Entity:
         return parent_info
 
     @classmethod
-    def from_domo_entity(cls, domo_entity, info_fn: Callable = None) -> "Entity":
+    def from_domo_entity(
+        cls, domo_entity: Any, info_fn: Optional[Callable[..., Any]] = None
+    ) -> Optional["Entity"]:
         """Create Entity from a DomoEntity object"""
 
         if not domo_entity:
@@ -335,7 +349,7 @@ class Correlation:
 class CorrelationManager:
     """Manages correlation IDs and context propagation"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.trace_id_var: ContextVar[Optional[str]] = ContextVar(
             "trace_id", default=None
         )
@@ -352,7 +366,7 @@ class CorrelationManager:
             "correlation", default=None
         )
         # Track last span_id per trace_id for proper parent span relationships
-        self._trace_span_history: Dict[str, str] = {}
+        self._trace_span_history: Dict[str, Optional[str]] = {}
 
     def generate_trace_id(self) -> str:
         """Generate a new trace ID"""
@@ -428,7 +442,7 @@ class CorrelationManager:
     def start_request(
         self,
         parent_trace_id: Optional[str] = None,
-        auth=None,
+        auth: Any = None,
         is_pagination_request: bool = False,
     ) -> str:
         """Start a new request context"""
@@ -489,7 +503,7 @@ class CorrelationManager:
             "correlation": correlation,
         }
 
-    def set_context_value(self, key: str, value: Any):
+    def set_context_value(self, key: str, value: Any) -> None:
         """Set a value in the correlation context"""
         correlation = self.correlation_var.get()
         if correlation:
@@ -578,10 +592,10 @@ class LogEntry:
     # Flexible metadata
     extra: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Only override method from http_details if method is still default
-        if self.http_details and self.method == "COMMENT":
-            self.method = self.http_details.method
+        if self.http_details and self.method == "COMMENT" and self.http_details.method:
+            self.method = self.http_details.method  # type: ignore
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert LogEntry to dictionary for JSON serialization with proper formatting."""
@@ -646,7 +660,7 @@ class LogEntry:
 
     @classmethod
     def create(
-        cls, level: LogLevel, message: str, app_name: str = "default", **kwargs
+        cls, level: LogLevel, message: str, app_name: str = "default", **kwargs: Any
     ) -> "LogEntry":
         """Factory method to create a LogEntry with current timestamp"""
         timestamp = dt.datetime.now().isoformat() + "Z"

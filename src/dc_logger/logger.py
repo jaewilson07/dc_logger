@@ -6,12 +6,12 @@ with support for multiple handlers, correlation tracking, and cloud integrations
 """
 
 import asyncio
-from typing import List, Optional
+from asyncio import Task
+from typing import Any, List, Optional
 
-from .client.correlation import correlation_manager
 from .client.enums import LogLevel
 from .client.exceptions import LogConfigError
-from .client.models import LogEntry
+from .client.models import LogEntry, correlation_manager
 from .configs.base import LogConfig
 from .configs.console import ConsoleLogConfig
 from .handlers.base import LogHandler
@@ -32,7 +32,7 @@ class DCLogger:
         self.handlers: List[LogHandler] = []
         self.buffer: List[LogEntry] = []
         self.correlation_manager = correlation_manager
-        self.flush_task = None
+        self.flush_task: Optional[Task[None]] = None
 
         # Validate configuration
         config.validate_config()
@@ -48,7 +48,7 @@ class DCLogger:
             # No event loop, task will be started when first log is called
             pass
 
-    def _setup_handlers(self):
+    def _setup_handlers(self) -> None:
         """Setup handlers based on configuration"""
         # Get handler configurations from the config
         handler_configs = self.config.get_handler_configs()
@@ -82,12 +82,12 @@ class DCLogger:
             else:
                 raise LogConfigError(f"Unknown handler type: {handler_type}")
 
-    def _start_flush_task(self):
+    def _start_flush_task(self) -> None:
         """Start the background flush task"""
         if self.flush_task is None:
             self.flush_task = asyncio.create_task(self._periodic_flush())
 
-    async def log(self, level: LogLevel, message: str, **context) -> bool:
+    async def log(self, level: LogLevel, message: str, **context: Any) -> bool:
         """Log a message with structured context"""
 
         # Check if we should log this level
@@ -145,37 +145,39 @@ class DCLogger:
 
         return success
 
-    async def _periodic_flush(self):
+    async def _periodic_flush(self) -> None:
         """Background task to periodically flush logs"""
         while True:
             await asyncio.sleep(self.config.flush_interval)
             await self.flush()
 
     # Convenience methods for different log levels
-    async def debug(self, message: str, **context) -> bool:
+    async def debug(self, message: str, **context: Any) -> bool:
         return await self.log(LogLevel.DEBUG, message, **context)
 
-    async def info(self, message: str, **context) -> bool:
+    async def info(self, message: str, **context: Any) -> bool:
         return await self.log(LogLevel.INFO, message, **context)
 
-    async def warning(self, message: str, **context) -> bool:
+    async def warning(self, message: str, **context: Any) -> bool:
         return await self.log(LogLevel.WARNING, message, **context)
 
-    async def error(self, message: str, **context) -> bool:
+    async def error(self, message: str, **context: Any) -> bool:
         return await self.log(LogLevel.ERROR, message, **context)
 
-    async def critical(self, message: str, **context) -> bool:
+    async def critical(self, message: str, **context: Any) -> bool:
         return await self.log(LogLevel.CRITICAL, message, **context)
 
-    def start_request(self, parent_trace_id: Optional[str] = None, auth=None) -> str:
+    def start_request(
+        self, parent_trace_id: Optional[str] = None, auth: Any = None
+    ) -> str:
         """Start a new request context"""
         return self.correlation_manager.start_request(parent_trace_id, auth)
 
-    def end_request(self):
+    def end_request(self) -> None:
         """End current request context"""
         # Clear context variables (they'll be reset on next request)
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources"""
         # Cancel flush task
         if hasattr(self, "flush_task") and self.flush_task:
@@ -207,7 +209,7 @@ def get_logger(app_name: str = "domolibrary") -> DCLogger:
     return _global_logger
 
 
-def set_global_logger(logger: DCLogger):
+def set_global_logger(logger: DCLogger) -> None:
     """Set the global logger instance"""
     global _global_logger
     _global_logger = logger

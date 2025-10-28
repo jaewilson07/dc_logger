@@ -1,6 +1,6 @@
 """Factory functions for creating common logger configurations"""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ..client.enums import LogLevel
 from .cloud import DatadogLogConfig
@@ -9,14 +9,14 @@ from .multi_handler import HandlerConfig, MultiHandlerLogConfig
 
 
 def create_console_config(
-    level: LogLevel = LogLevel.INFO, pretty_print: bool = True, **kwargs
+    level: LogLevel = LogLevel.INFO, pretty_print: bool = True, **kwargs: Any
 ) -> ConsoleLogConfig:
     """Create a simple console configuration"""
     return ConsoleLogConfig(level=level, pretty_print=pretty_print, **kwargs)
 
 
 def create_file_config(
-    file_path: str, level: LogLevel = LogLevel.INFO, **kwargs
+    file_path: str, level: LogLevel = LogLevel.INFO, **kwargs: Any
 ) -> ConsoleLogConfig:
     """Create a file configuration"""
     return ConsoleLogConfig(
@@ -29,7 +29,10 @@ def create_file_config(
 
 
 def create_console_file_config(
-    file_path: str, level: LogLevel = LogLevel.INFO, pretty_print: bool = True, **kwargs
+    file_path: str,
+    level: LogLevel = LogLevel.INFO,
+    pretty_print: bool = True,
+    **kwargs: Any,
 ) -> MultiHandlerLogConfig:
     """Create a configuration that logs to both console and file"""
     console_config = ConsoleLogConfig(level=level, pretty_print=pretty_print, **kwargs)
@@ -59,7 +62,7 @@ def create_console_datadog_config(
     datadog_env: str = "production",
     level: LogLevel = LogLevel.INFO,
     pretty_print: bool = True,
-    **kwargs,
+    **kwargs: Any,
 ) -> MultiHandlerLogConfig:
     """Create a configuration that logs to both console and Datadog"""
     console_config = ConsoleLogConfig(level=level, pretty_print=pretty_print, **kwargs)
@@ -96,7 +99,7 @@ def create_console_file_datadog_config(
     datadog_env: str = "production",
     level: LogLevel = LogLevel.INFO,
     pretty_print: bool = True,
-    **kwargs,
+    **kwargs: Any,
 ) -> MultiHandlerLogConfig:
     """Create a configuration that logs to console, file, and Datadog"""
     console_config = ConsoleLogConfig(level=level, pretty_print=pretty_print, **kwargs)
@@ -140,7 +143,7 @@ def create_file_datadog_config(
     datadog_service: str = "domolibrary",
     datadog_env: str = "production",
     level: LogLevel = LogLevel.INFO,
-    **kwargs,
+    **kwargs: Any,
 ) -> MultiHandlerLogConfig:
     """Create a configuration that logs to file and Datadog"""
     file_config = ConsoleLogConfig(

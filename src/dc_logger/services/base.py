@@ -17,7 +17,7 @@ from ..client.exceptions import LogWriteError
 class CloudServiceConfig(ServiceConfig):
     """stores auth and connection information to a service provider"""
 
-    cloud_provider: str
+    cloud_provider: str = ""  # Will be validated in validate_config
 
     @abstractmethod
     def to_platform_config(self) -> Dict[str, Any]:
@@ -29,6 +29,11 @@ class CloudServiceConfig(ServiceConfig):
 class CloudHandler(ServiceHandler):
     """base class for communicating with service provider (route functions)"""
 
+    @abstractmethod
+    async def _send_logs_simple_api(self, entries: List[LogEntry]) -> Any:
+        """Send logs using simple API - must be implemented by subclasses"""
+        pass
+
     # def __init__(self, config):
     #     super().__init__(config)
     #     self.cloud_config = config.to_platform_config()
@@ -39,20 +44,20 @@ class CloudHandler(ServiceHandler):
     async def _send_to_cloud(self, entries: List[LogEntry]) -> bool:
         """Send log entries to Datadog using direct HTTP API"""
 
-        def submit_logs():
+        def submit_logs() -> Any:
             return self._send_logs_simple_api(entries)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(submit_logs)
             result = await asyncio.wrap_future(future)
-            return result
+            return bool(result)
 
-    async def _write_pooling(self, entry):
+    async def _write_pooling(self, entry: Any) -> bool:
         # if pool:
         #     await self._send_to_cloud(self.buffer)
-        pass
+        return True
 
-    async def write(self, entry) -> bool:
+    async def write(self, entry: Any) -> bool:
         """Write entries to cloud provider"""
         try:
             return await self._write_pooling(entry)

@@ -1,28 +1,26 @@
 __all__ = ["DatadogServiceConfig", "DatadogHandler"]
 
 import socket
-import requests
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import requests
+
+from ...client.base import OutputMode
 from ...client.enums import LogLevel
 from ...client.exceptions import LogConfigError, LogHandlerError
 from ...services.base import CloudHandler, CloudServiceConfig, LogEntry
-
-from dc_logger.services.base import LogEntry
-from dc_logger.client.exceptions import LogHandlerError,LogConfigError
-from dc_logger.services.cloud.base import CloudHandler,CloudServiceConfig 
-from dc_logger.client.models import LogLevel
 
 # from ...client.models import LogEntry
 # from ...client.enums import LogLevel
 # from ...client.exceptions import LogHandlerError
 
+
 @dataclass
 class DatadogServiceConfig(CloudServiceConfig):
     """Datadog-specific log configuration"""
 
-    output_mode: str = "cloud"
+    output_mode: OutputMode = "cloud"
     cloud_provider: str = "datadog"
 
     api_key: Optional[str] = field(default=None, repr=False)
@@ -33,7 +31,7 @@ class DatadogServiceConfig(CloudServiceConfig):
     env: str = "production"
 
     @staticmethod
-    def _derive_intake_url(site):
+    def _derive_intake_url(site: str) -> str:
         if site == "datadoghq.com":
             return "https://http-intake.logs.datadoghq.com/v1/input"
 
@@ -43,7 +41,7 @@ class DatadogServiceConfig(CloudServiceConfig):
 
         return f"https://http-intake.logs.{site}/v1/input"
 
-    def derive_intake_url(self):
+    def derive_intake_url(self) -> str:
         return self._derive_intake_url(site=self.site)
 
     def to_platform_config(self) -> Dict[str, Any]:
@@ -65,11 +63,12 @@ class DatadogServiceConfig(CloudServiceConfig):
 class DatadogHandler(CloudHandler):
     """Datadog log handler using direct HTTP API"""
 
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         super().__init__(config)
+        self.cloud_config = config.to_platform_config()
         self._validate_config()
 
-    def _validate_config(self):
+    def _validate_config(self) -> bool:
         """Validate Datadog configuration"""
         api_key = self.cloud_config.get("api_key")
         if not api_key:
@@ -176,7 +175,6 @@ class DatadogHandler(CloudHandler):
 
     async def _send_logs_simple_api(self, entries: List[LogEntry]) -> bool:
         """Send logs using direct HTTP requests to Datadog"""
-        
 
         intake_url = self.cloud_config.derive_intake_url()
         api_key = self.cloud_config.get("api_key")

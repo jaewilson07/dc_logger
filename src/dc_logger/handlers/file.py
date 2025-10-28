@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import Any, List
 
 from ..client.exceptions import LogConfigError, LogHandlerError, LogWriteError
 from ..client.models import LogEntry
@@ -9,7 +9,7 @@ from .base import LogHandler
 class FileHandler(LogHandler):
     """Handler for file output"""
 
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         super().__init__(config)
         if not config.destination:
             raise LogConfigError("File destination is required for FileHandler")
@@ -38,7 +38,7 @@ class FileHandler(LogHandler):
                         f.write(entry.to_json() + "\n")
                     else:
                         f.write(
-                            f"[{entry.timestamp}] {entry.level.value} {entry.logger}: {entry.message}\n"
+                            f"[{entry.timestamp}] {entry.level.value} {entry.app_name}: {entry.message}\n"
                         )
             return True
         except PermissionError as e:

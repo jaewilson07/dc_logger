@@ -81,7 +81,7 @@ def log_call(
     include_params: bool = False,
     sensitive_params: Optional[list] = None,
     config: Optional[LogDecoratorConfig] = None,
-):
+) -> Any:
     """
     Decorator to automatically log function calls with full dependency injection support.
 
@@ -163,7 +163,7 @@ def log_call(
         )
     else:
         # Called as @log_call(...) (with arguments)
-        def decorator(func):
+        def decorator(func: Callable) -> Any:
             return _create_log_call_decorator(
                 func=func,
                 logger=logger,
@@ -189,7 +189,7 @@ def _create_log_call_decorator(
     include_params: bool = False,
     sensitive_params: Optional[list] = None,
     config: Optional[LogDecoratorConfig] = None,
-):
+) -> Any:
     """Create the actual decorator with logger injection."""
     # Merge direct parameters with config
     if config is None:
@@ -214,7 +214,7 @@ def _create_log_call_decorator(
             config.sensitive_params = sensitive_params
 
     @wraps(func)
-    async def async_wrapper(*args, **kwargs):
+    async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
         # Get the logger instance
         if logger is None:
             if logger_getter is not None:
@@ -239,7 +239,7 @@ def _create_log_call_decorator(
             func.__globals__.update(original_globals)
 
     @wraps(func)
-    def sync_wrapper(*args, **kwargs):
+    def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
         # Get the logger instance
         if logger is None:
             if logger_getter is not None:
@@ -291,8 +291,10 @@ def _sanitize_params(kwargs: dict, sensitive_params: list) -> dict:
             safe_kwargs[k] = "***"
         elif k == "auth":
             safe_kwargs[k] = f"<{type(v).__name__}>"
-        elif isinstance(v, (str, int, float, bool, type(None))):
-            safe_kwargs[k] = v
+        elif isinstance(v, (str, int, float, bool)):
+            safe_kwargs[k] = str(v)
+        elif v is None:
+            safe_kwargs[k] = "None"
         else:
             safe_kwargs[k] = f"<{type(v).__name__}>"
     return safe_kwargs
@@ -306,7 +308,7 @@ async def _execute_with_logging(
     logger: Optional[Any],
     logger_getter: Optional[Callable],
     is_async: bool = True,
-):
+) -> Any:
     """Execute function with logging (async version)."""
     start_time = time.time()
 
@@ -330,12 +332,20 @@ async def _execute_with_logging(
         http_details = None
 
     # Get caller information
-    caller_frame = inspect.currentframe().f_back.f_back
-    caller_info = {
-        "file": caller_frame.f_code.co_filename,
-        "line": caller_frame.f_lineno,
-        "function": caller_frame.f_code.co_name,
-    }
+    current_frame = inspect.currentframe()
+    if current_frame and current_frame.f_back and current_frame.f_back.f_back:
+        caller_frame = current_frame.f_back.f_back
+        caller_info = {
+            "file": caller_frame.f_code.co_filename,
+            "line": caller_frame.f_lineno,
+            "function": caller_frame.f_code.co_name,
+        }
+    else:
+        caller_info = {
+            "file": "unknown",
+            "line": 0,
+            "function": "unknown",
+        }
 
     # Build context
     log_context = {
@@ -478,7 +488,7 @@ def _execute_with_logging_sync(
     config: LogDecoratorConfig,
     logger: Optional[Any],
     logger_getter: Optional[Callable],
-):
+) -> Any:
     """Execute function with logging (sync version)."""
     start_time = time.time()
 

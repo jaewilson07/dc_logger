@@ -108,7 +108,7 @@ class AzureLogAnalyticsConfig(LogConfig):
         default_factory=lambda: os.getenv("AZURE_SHARED_KEY")
     )
     log_type: str = "domolibrary"
-    output_mode: str = field(default="cloud", init=False)
+    output_mode: OutputMode = field(default="cloud", init=False)
     cloud_provider: str = field(default="azure", init=False)
 
     def to_platform_config(self) -> Dict[str, Any]:

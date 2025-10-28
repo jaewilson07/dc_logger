@@ -26,10 +26,10 @@ def sync_version():
 
     if new_content != init_content:
         init_path.write_text(new_content)
-        print(f"✓ Version synced to {version}")
+        print(f"[OK] Version synced to {version}")
         return 1  # Exit with 1 to indicate file was modified
     else:
-        print(f"✓ Version already {version}")
+        print(f"[OK] Version already {version}")
         return 0
 
 
