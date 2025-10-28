@@ -18,6 +18,8 @@ from .models import (
     correlation_manager,
 )
 
+# Note: The legacy `Entity` class still exists in `models.py` for backward compatibility and migration purposes.
+# It is intentionally not exported here to discourage its use in new code. If you need to use it, import directly from `models.py`.
 __all__ = [
     # Enums
     "LogLevel",

@@ -8,7 +8,7 @@ and how changing the global logger affects all decorated functions.
 
 import asyncio
 
-from dc_logger.client.Log import LogLevel
+from dc_logger.client.models import LogLevel
 
 from dc_logger import log_call
 from dc_logger.client.base import (

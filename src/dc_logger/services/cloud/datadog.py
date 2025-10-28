@@ -1,6 +1,7 @@
 __all__ = ["DatadogServiceConfig", "DatadogHandler"]
 
 import socket
+import requests
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -8,6 +9,14 @@ from ...client.enums import LogLevel
 from ...client.exceptions import LogConfigError, LogHandlerError
 from ...services.base import CloudHandler, CloudServiceConfig, LogEntry
 
+from dc_logger.services.base import LogEntry
+from dc_logger.client.exceptions import LogHandlerError,LogConfigError
+from dc_logger.services.cloud.base import CloudHandler,CloudServiceConfig 
+from dc_logger.client.models import LogLevel
+
+# from ...client.models import LogEntry
+# from ...client.enums import LogLevel
+# from ...client.exceptions import LogHandlerError
 
 @dataclass
 class DatadogServiceConfig(CloudServiceConfig):
@@ -167,7 +176,7 @@ class DatadogHandler(CloudHandler):
 
     async def _send_logs_simple_api(self, entries: List[LogEntry]) -> bool:
         """Send logs using direct HTTP requests to Datadog"""
-        import requests
+        
 
         intake_url = self.cloud_config.derive_intake_url()
         api_key = self.cloud_config.get("api_key")
