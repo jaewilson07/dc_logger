@@ -26,7 +26,7 @@ from .configs import (
     DatadogLogConfig,
     GCPLoggingConfig,
     LogConfig,
-    MultiHandler_LogConfig,
+    MultiHandlerLogConfig,
     create_console_config,
     create_console_datadog_config,
     create_console_file_config,
@@ -60,7 +60,7 @@ __all__ = [
     "AWSCloudWatchLogConfig",
     "GCPLoggingConfig",
     "AzureLogAnalyticsConfig",
-    "MultiHandler_LogConfig",
+    "MultiHandlerLogConfig",
     # Factory functions
     "create_console_config",
     "create_file_config",

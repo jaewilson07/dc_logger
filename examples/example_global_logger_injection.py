@@ -12,14 +12,14 @@ from dc_logger.client.models import LogLevel
 
 from dc_logger import log_call
 from dc_logger.client.base import (
-    Handler_BufferSettings,
+    HandlerBufferSettings,
     HandlerInstance,
     Logger,
     get_global_logger,
     set_global_logger,
 )
-from dc_logger.logs.services.file import File_ServiceConfig, FileHandler
-from dc_logger.services.console.base import Console_ServiceConfig, ConsoleHandler
+from dc_logger.logs.services.file import FileServiceConfig, FileHandler
+from dc_logger.services.console.base import ConsoleServiceConfig, ConsoleHandler
 
 
 # Example functions that use the injected logger
@@ -86,12 +86,12 @@ async def main():
     print("Creating a custom logger with app_name='production_app'...")
 
     # Create custom console logger
-    console_config = Console_ServiceConfig(
+    console_config = ConsoleServiceConfig(
         output_mode="console",
         output_type="json"  # Use JSON format for this example
     )
 
-    buffer_settings = Handler_BufferSettings()
+    buffer_settings = HandlerBufferSettings()
     console_handler = ConsoleHandler(
         buffer_settings=buffer_settings,
         service_config=console_config
@@ -130,7 +130,7 @@ async def main():
     print("Creating a file logger and setting it as global...")
 
     # Create file logger
-    file_config = File_ServiceConfig(
+    file_config = FileServiceConfig(
         destination="example_logs/business_operations.json",
         output_mode="file",
         format="json",

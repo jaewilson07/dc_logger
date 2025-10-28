@@ -17,7 +17,7 @@ from .factory import (
     create_file_config,
     create_file_datadog_config,
 )
-from .multi_handler import HandlerConfig, MultiHandler_LogConfig
+from .multi_handler import HandlerConfig, MultiHandlerLogConfig
 
 __all__ = [
     # Base config
@@ -30,7 +30,7 @@ __all__ = [
     "GCPLoggingConfig",
     "AzureLogAnalyticsConfig",
     # Multi-handler config
-    "MultiHandler_LogConfig",
+    "MultiHandlerLogConfig",
     "HandlerConfig",
     # Factory functions
     "create_console_config",
