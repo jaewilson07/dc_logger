@@ -1,8 +1,8 @@
-from typing import List
 from abc import ABC, abstractmethod
+from typing import List
 
-from ..configs.base import LogConfig
 from ..client.models import LogEntry
+from ..configs.base import LogConfig
 
 
 class LogHandler(ABC):

@@ -1,9 +1,9 @@
 import os
 from typing import List
 
-from .base import LogHandler
-from ..client.models import LogEntry
 from ..client.exceptions import LogConfigError, LogHandlerError, LogWriteError
+from ..client.models import LogEntry
+from .base import LogHandler
 
 
 class FileHandler(LogHandler):
@@ -47,7 +47,7 @@ class FileHandler(LogHandler):
             )
         except OSError as e:
             raise LogWriteError(f"OS error writing to file {self.file_path}: {e}")
-        except IOError as e:
+        except OSError as e:
             raise LogWriteError(f"IO error writing to file {self.file_path}: {e}")
         except Exception as e:
             raise LogWriteError(

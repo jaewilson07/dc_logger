@@ -9,10 +9,17 @@ This example demonstrates the new enhanced logging features:
 """
 
 import asyncio
-from dc_logger import log_call
+
 from dc_logger.client.Log import LogLevel
-from dc_logger.client.base import Logger, HandlerInstance, Handler_BufferSettings, set_global_logger
-from dc_logger.services.console.base import ConsoleHandler, Console_ServiceConfig
+
+from dc_logger import log_call
+from dc_logger.client.base import (
+    Handler_BufferSettings,
+    HandlerInstance,
+    Logger,
+    set_global_logger,
+)
+from dc_logger.services.console.base import Console_ServiceConfig, ConsoleHandler
 
 # Set up JSON console logger to see the actual output
 console_config = Console_ServiceConfig(
@@ -101,7 +108,7 @@ async def get_data_stream(dataset_id: str, **kwargs):
         print(f"  [LOGGER AVAILABLE] Stream chunk {i}")
         yield chunk
 
-    print(f"  [LOGGER AVAILABLE] Stream completed")
+    print("  [LOGGER AVAILABLE] Stream completed")
 
 # Example 6: Different log levels with method and level_name
 @log_call(level_name="error_handling")

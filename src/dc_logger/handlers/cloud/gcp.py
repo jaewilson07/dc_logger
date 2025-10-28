@@ -1,7 +1,7 @@
 from typing import List
 
-from .base import CloudHandler
 from ...client.models import LogEntry
+from .base import CloudHandler
 
 
 class GCPLoggingHandler(CloudHandler):

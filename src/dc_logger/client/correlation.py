@@ -1,6 +1,6 @@
 import uuid
-from typing import Optional, Dict, Any
 from contextvars import ContextVar
+from typing import Any, Dict, Optional
 
 from .models import Correlation
 

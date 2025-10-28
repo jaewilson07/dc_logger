@@ -1,11 +1,8 @@
-import os
-from typing import Optional, List, Dict, Any, Literal
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Dict, List, Literal, Optional
 
 from ..client.enums import LogLevel
-from ..client.exceptions import LogConfigError
-
 
 # Type for valid output modes
 OutputMode = Literal["cloud", "console", "file"]
@@ -33,8 +30,12 @@ class LogConfig(ABC):
 
     def get_handler_configs(self) -> List[Dict[str, Any]]:
         """Get handler configurations for this config. Default implementation returns single handler."""
-        return [{
-            "type": self.output_mode,
-            "config": self,
-            "cloud_config": self.to_platform_config() if self.output_mode == "cloud" else None
-        }]
+        return [
+            {
+                "type": self.output_mode,
+                "config": self,
+                "cloud_config": (
+                    self.to_platform_config() if self.output_mode == "cloud" else None
+                ),
+            }
+        ]
