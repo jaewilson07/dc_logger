@@ -1,14 +1,45 @@
 import datetime as dt
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any, Callable, Literal
 from dataclasses import dataclass, field
 import json
+import uuid
+from contextvars import ContextVar
 
 from .enums import LogLevel
+
+# LogMethod type for HTTP methods
+LogMethod = Literal["POST", "PUT", "DELETE", "PATCH", "COMMENT", "GET"]
+
+
+@dataclass
+class LogEntity:
+    """Entity information for logging"""
+
+    type: str 
+    id: Optional[str] = None
+    name: Optional[str] = None
+    additional_info: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_any(cls, obj):
+        if isinstance(obj, dict) and obj:
+            return cls(**obj)
+        elif isinstance(obj, cls):
+            return obj
+        return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": self.type,
+            "id": self.id,
+            "name": self.name,
+            "additional_info": self.additional_info,
+        }
 
 
 @dataclass
 class Entity:
-    """Entity information for logging"""
+    """Entity information for logging (legacy - use LogEntity instead)"""
 
     type: str  # dataset, card, user, dataflow, page, etc.
     id: Optional[str] = None
@@ -223,6 +254,30 @@ class HTTPDetails:
             "response_body": self.response_body
         }
 
+    @classmethod
+    def from_kwargs(cls, kwargs: Dict[str, Any]) -> Optional["HTTPDetails"]:
+        """Create HTTPDetails from kwargs"""
+        # Check if http_details is directly provided
+        http_details = kwargs.get("http_details")
+        if isinstance(http_details, dict) and http_details:
+            return cls(**http_details)
+        elif isinstance(http_details, cls):
+            return http_details
+        
+        # Check for individual fields
+        if any(k in kwargs for k in ["method", "url", "status_code", "headers", "response_size"]):
+            return cls(
+                method=kwargs.get("method"),
+                url=kwargs.get("url"),
+                status_code=kwargs.get("status_code"),
+                headers=kwargs.get("headers"),
+                response_size=kwargs.get("response_size"),
+                request_body=kwargs.get("request_body"),
+                response_body=kwargs.get("response_body"),
+            )
+        
+        return None
+
 
 @dataclass
 class Correlation:
@@ -239,6 +294,176 @@ class Correlation:
             "span_id": self.span_id,
             "parent_span_id": self.parent_span_id
         }
+
+
+class CorrelationManager:
+    """Manages correlation IDs and context propagation"""
+
+    def __init__(self):
+        self.trace_id_var: ContextVar[Optional[str]] = ContextVar(
+            "trace_id", default=None
+        )
+        self.request_id_var: ContextVar[Optional[str]] = ContextVar(
+            "request_id", default=None
+        )
+        self.session_id_var: ContextVar[Optional[str]] = ContextVar(
+            "session_id", default=None
+        )
+        self.span_id_var: ContextVar[Optional[str]] = ContextVar(
+            "span_id", default=None
+        )
+        self.correlation_var: ContextVar[Optional[Correlation]] = ContextVar(
+            "correlation", default=None
+        )
+        # Track last span_id per trace_id for proper parent span relationships
+        self._trace_span_history: Dict[str, str] = {}
+
+    def generate_trace_id(self) -> str:
+        """Generate a new trace ID"""
+        return str(uuid.uuid4())
+
+    def generate_request_id(self) -> str:
+        """Generate a new request ID"""
+        return uuid.uuid4().hex[:12]
+
+    def generate_span_id(self) -> str:
+        """Generate a new span ID"""
+        return uuid.uuid4().hex[:16]
+
+    def generate_session_id(self) -> str:
+        """Generate a new session ID"""
+        # Simple random session ID
+        # Auth-based session ID generation can be implemented in domain-specific libraries
+        return uuid.uuid4().hex[:12]
+    
+    def get_or_create_correlation(self) -> Correlation:
+        """Get or create correlation with automatic span chaining.
+        
+        Each call creates a NEW span that chains to the previous span,
+        enabling span-per-log microservices-style tracing.
+        """
+        # Get or create trace_id (persists across logs)
+        current_trace_id = self.trace_id_var.get()
+        if not current_trace_id:
+            current_trace_id = self.generate_trace_id()
+            self.trace_id_var.set(current_trace_id)
+        
+        # Get previous span_id to set as parent
+        previous_span_id = self._trace_span_history.get(current_trace_id)
+        
+        # ALWAYS generate a NEW span_id for this log
+        new_span_id = self.generate_span_id()
+        
+        # Update context and history
+        self.span_id_var.set(new_span_id)
+        self._trace_span_history[current_trace_id] = new_span_id
+        
+        # Create correlation with chaining
+        correlation = Correlation(
+            trace_id=current_trace_id,
+            span_id=new_span_id,
+            parent_span_id=previous_span_id  # Chain to previous span
+        )
+        self.correlation_var.set(correlation)
+        
+        return correlation
+    
+    def start_new_trace(self) -> str:
+        """Start a completely new trace (clear existing trace_id).
+        
+        Use this to group separate bundles of logs:
+        - Bundle 1: User login flow -> trace_A
+        - Bundle 2: Data processing -> trace_B
+        
+        Returns the new trace_id.
+        """
+        # Clear existing trace context
+        self.trace_id_var.set(None)
+        self.request_id_var.set(None)
+        self.span_id_var.set(None)
+        self.correlation_var.set(None)
+        
+        # Generate new trace_id (next log will use this)
+        new_trace_id = self.generate_trace_id()
+        self.trace_id_var.set(new_trace_id)
+        
+        return new_trace_id
+
+    def start_request(
+        self,
+        parent_trace_id: Optional[str] = None,
+        auth=None,
+        is_pagination_request: bool = False,
+    ) -> str:
+        """Start a new request context"""
+        # Use existing trace_id if available, otherwise generate new one
+        # Only generate new trace_id if we don't have one in context AND no parent provided
+        current_trace_id = self.trace_id_var.get()
+        trace_id = parent_trace_id or current_trace_id or self.generate_trace_id()
+
+        request_id = self.generate_request_id()
+
+        # Use existing session_id or generate new one
+        session_id = self.session_id_var.get() or self.generate_session_id()
+        span_id = self.generate_span_id()
+
+        # Handle parent span for pagination vs regular requests
+        if is_pagination_request:
+            # For pagination requests, use the original parent span for this trace
+            # This ensures all pagination requests have the same parent
+            parent_span_id = self._trace_span_history.get(f"{trace_id}_original_parent")
+            if not parent_span_id:
+                # If no original parent stored, this is the first pagination request
+                # Store current span as original parent for future pagination requests
+                parent_span_id = self._trace_span_history.get(trace_id)
+                self._trace_span_history[f"{trace_id}_original_parent"] = (
+                    parent_span_id or None
+                )
+        else:
+            # For regular requests, use normal span chaining
+            parent_span_id = self._trace_span_history.get(trace_id)
+            # Store this as the original parent for future pagination requests
+            self._trace_span_history[f"{trace_id}_original_parent"] = parent_span_id
+
+        # Update the span history with the current span_id for this trace
+        self._trace_span_history[trace_id] = span_id
+
+        # Set context variables
+        self.trace_id_var.set(trace_id)
+        self.request_id_var.set(request_id)
+        self.session_id_var.set(session_id)
+        self.span_id_var.set(span_id)
+
+        # Create correlation object
+        correlation = Correlation(
+            trace_id=trace_id, span_id=span_id, parent_span_id=parent_span_id
+        )
+        self.correlation_var.set(correlation)
+
+        return request_id
+
+    def get_current_context(self) -> Dict[str, Any]:
+        """Get current correlation context"""
+        correlation = self.correlation_var.get()
+        return {
+            "trace_id": self.trace_id_var.get(),
+            "request_id": self.request_id_var.get(),
+            "session_id": self.session_id_var.get(),
+            "span_id": self.span_id_var.get(),
+            "correlation": correlation,
+        }
+
+    def set_context_value(self, key: str, value: Any):
+        """Set a value in the correlation context"""
+        correlation = self.correlation_var.get()
+        if correlation:
+            correlation_dict = correlation.__dict__.copy()
+            correlation_dict[key] = value
+            self.correlation_var.set(Correlation(**correlation_dict))
+
+
+# Global correlation manager instance
+correlation_manager = CorrelationManager()
 
 
 @dataclass
@@ -259,6 +484,27 @@ class MultiTenant:
             "organization_id": self.organization_id
         }
 
+    @classmethod
+    def from_kwargs(cls, kwargs: Dict[str, Any], user: Optional[str] = None) -> Optional["MultiTenant"]:
+        """Create MultiTenant from kwargs or individual fields"""
+        # Check if multi_tenant is directly provided
+        multi_tenant = kwargs.get("multi_tenant")
+        if isinstance(multi_tenant, dict) and multi_tenant:
+            return cls(**multi_tenant)
+        elif isinstance(multi_tenant, cls):
+            return multi_tenant
+        
+        # Check for individual fields
+        if any(k in kwargs for k in ["user_id", "session_id", "tenant_id", "organization_id"]):
+            return cls(
+                user_id=kwargs.get("user_id") or user,
+                session_id=kwargs.get("session_id"),
+                tenant_id=kwargs.get("tenant_id"),
+                organization_id=kwargs.get("organization_id"),
+            )
+        
+        return None
+
 
 @dataclass
 class LogEntry:
@@ -267,13 +513,15 @@ class LogEntry:
     # Core log fields
     timestamp: str
     level: LogLevel
-    logger: str
     message: str
+    method: LogMethod = "COMMENT"
+    app_name: str = 'default'
 
     # Business context
     user: Optional[str] = None
     action: Optional[str] = None
-    entity: Optional[Entity] = None
+    level_name: Optional[str] = None
+    entity: Optional[LogEntity] = None
     status: str = "info"
     duration_ms: Optional[int] = None
 
@@ -289,133 +537,102 @@ class LogEntry:
     # Flexible metadata
     extra: Dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self):
+        # Only override method from http_details if method is still default
+        if self.http_details and self.method == "COMMENT":
+            self.method = self.http_details.method
+
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
+        """Convert LogEntry to dictionary for JSON serialization with proper formatting."""
         result = {
-            # Core log fields
             "timestamp": self.timestamp,
             "level": self.level.value,
-            "logger": self.logger,
+            "app_name": self.app_name,
             "message": self.message,
-            # Business context
-            "user": self.user
-            or (
-                self.multi_tenant.user_id
-                if self.multi_tenant and self.multi_tenant.user_id
-                else None
-            ),
-            "action": self.action,
+            "method": self.method,
             "status": self.status,
             "duration_ms": self.duration_ms,
-            # Entity (serialize if present)
-            "entity": self.entity.to_dict() if self.entity else None,
-            # Correlation (serialize if present)
-            "correlation": self.correlation.__dict__ if self.correlation else None,
-            # Multi-tenant (serialize if present)
-            "multi_tenant": self.multi_tenant.__dict__ if self.multi_tenant else None,
-            # HTTP details (serialize if present and has data)
-            "http_details": self._serialize_http_details(),
-            # Flexible metadata
-            "extra": self.extra,
         }
-
-        # Remove None values for cleaner output
-        return {k: v for k, v in result.items() if v is not None}
+        
+        # Only include action if it's not None
+        if self.action is not None:
+            result["action"] = self.action
+            
+        # Only include level_name if it's not None
+        if self.level_name is not None:
+            result["level_name"] = self.level_name
+        
+        # Add user (with fallback to multi_tenant.user_id)
+        user = self.user
+        if not user and self.multi_tenant and self.multi_tenant.user_id:
+            user = self.multi_tenant.user_id
+        if user:
+            result["user"] = user
+        
+        # Add entity (serialize if present)
+        if self.entity:
+            result["entity"] = self.entity.to_dict()
+        
+        # Add correlation (serialize if present)
+        if self.correlation:
+            result["correlation"] = self.correlation.to_dict() if hasattr(self.correlation, 'to_dict') else self.correlation.__dict__
+        
+        # Add multi_tenant (serialize if present)
+        if self.multi_tenant:
+            result["multi_tenant"] = self.multi_tenant.to_dict() if hasattr(self.multi_tenant, 'to_dict') else self.multi_tenant.__dict__
+        
+        # Add http_details (serialize if present)
+        if self.http_details:
+            result["http_details"] = self.http_details.to_dict()
+        
+        # Add extra (only if not empty)
+        if self.extra:
+            result["extra"] = self.extra
+        
+        return result
 
     def to_json(self) -> str:
         """Convert to JSON string"""
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def create(cls, level: LogLevel, message: str, logger: str, **kwargs) -> "LogEntry":
+    def create(cls, level: LogLevel, message: str, app_name: str = 'default', **kwargs) -> "LogEntry":
         """Factory method to create a LogEntry with current timestamp"""
-        timestamp = dt.datetime.utcnow().isoformat() + "Z"
-
-        # Extract known fields
+        timestamp = dt.datetime.now().isoformat() + "Z"
         user = kwargs.get("user")
         action = kwargs.get("action")
+        level_name = kwargs.get("level_name")
         status = kwargs.get("status", "info")
         duration_ms = kwargs.get("duration_ms")
+        method = kwargs.get("method", "COMMENT")  # Extract method from kwargs
         extra = kwargs.get("extra", {})
 
-        # Handle entity - could be dict, Entity object, or DomoEntity object
-        entity = kwargs.get("entity")
-        if isinstance(entity, dict) and entity:
-            entity_obj = Entity(**entity)
-        elif isinstance(entity, Entity):
-            entity_obj = entity
-        elif entity and hasattr(entity, "id"):  # DomoEntity object
-            entity_obj = Entity.from_domo_entity(entity)
+        entity_obj = LogEntity.from_any(kwargs.get("entity"))
+        
+        # Handle correlation - can be dict or Correlation object
+        correlation_param = kwargs.get("correlation")
+        if isinstance(correlation_param, Correlation):
+            correlation_obj = correlation_param
+        elif isinstance(correlation_param, dict):
+            correlation_obj = Correlation(**correlation_param)
         else:
-            entity_obj = None
+            correlation_obj = None
+            
+        multi_tenant_obj = MultiTenant.from_kwargs(kwargs, user)
+        http_details_obj = HTTPDetails.from_kwargs(kwargs)
 
-        # Handle correlation - could be dict, Correlation object, or individual fields
-        correlation_obj = None
-        correlation = kwargs.get("correlation")
-        if isinstance(correlation, dict) and correlation:
-            correlation_obj = Correlation(**correlation)
-        elif isinstance(correlation, Correlation):
-            correlation_obj = correlation
-        elif any(k in kwargs for k in ["trace_id", "span_id", "parent_span_id"]):
-            # Create correlation from individual fields
-            correlation_obj = Correlation(
-                trace_id=kwargs.get("trace_id"),
-                span_id=kwargs.get("span_id"),
-                parent_span_id=kwargs.get("parent_span_id"),
-            )
-
-        # Handle multi-tenant - could be dict, MultiTenant object, or individual fields
-        multi_tenant_obj = None
-        multi_tenant = kwargs.get("multi_tenant")
-        if isinstance(multi_tenant, dict) and multi_tenant:
-            multi_tenant_obj = MultiTenant(**multi_tenant)
-        elif isinstance(multi_tenant, MultiTenant):
-            multi_tenant_obj = multi_tenant
-        elif any(
-            k in kwargs
-            for k in ["user_id", "session_id", "tenant_id", "organization_id"]
-        ):
-            # Create multi-tenant from individual fields
-            multi_tenant_obj = MultiTenant(
-                user_id=kwargs.get("user_id") or kwargs.get("user"),
-                session_id=kwargs.get("session_id"),
-                tenant_id=kwargs.get("tenant_id"),
-                organization_id=kwargs.get("organization_id"),
-            )
-
-        # Handle HTTP details - could be dict, HTTPDetails object, or individual fields
-        http_details_obj = None
-        http_details = kwargs.get("http_details")
-        if isinstance(http_details, dict) and http_details:
-            http_details_obj = HTTPDetails(**http_details)
-        elif isinstance(http_details, HTTPDetails):
-            http_details_obj = http_details
-        elif any(
-            k in kwargs
-            for k in ["method", "url", "status_code", "headers", "response_size"]
-        ):
-            # Create HTTP details from individual fields
-            http_details_obj = HTTPDetails(
-                method=kwargs.get("method"),
-                url=kwargs.get("url"),
-                status_code=kwargs.get("status_code"),
-                headers=kwargs.get("headers"),
-                response_size=kwargs.get("response_size"),
-                request_body=kwargs.get("request_body"),
-                response_body=kwargs.get("response_body"),
-            )
-
-        # If user is not set but multi_tenant has user_id, use that
         if not user and multi_tenant_obj and multi_tenant_obj.user_id:
             user = multi_tenant_obj.user_id
 
         return cls(
             timestamp=timestamp,
             level=level,
-            logger=logger,
+            app_name=app_name,
             message=message,
+            method=method,  # Pass method to constructor
             user=user,
             action=action,
+            level_name=level_name,
             entity=entity_obj,
             status=status,
             duration_ms=duration_ms,

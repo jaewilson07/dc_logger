@@ -7,7 +7,7 @@ __all__ = ['OutputMode', 'ServiceConfig', 'Handler_BufferSettings', 'ServiceHand
            'get_global_logger', 'set_global_logger', 'get_or_create_logger']
 
 # %% ../../nbs/client/base.ipynb 2
-from .Log import LogEntry, LogLevel
+from .models import LogEntry, LogLevel, LogEntity, CorrelationManager
 
 # %% ../../nbs/client/base.ipynb 3
 from typing import Optional, List, Dict, Any, Literal
@@ -118,8 +118,8 @@ class HandlerInstance:
     
     async def write(self, entry: LogEntry) -> bool:
         """Write log entry to destination with filtering"""
-        # Filter by log level
-        if entry.level.value < self.log_level.value:
+        # Filter by log level - only filter DEBUG, always show INFO/WARNING/ERROR/CRITICAL
+        if entry.level == LogLevel.DEBUG and not self.log_level.should_log(entry.level):
             return False
             
         # Filter by log method
@@ -139,7 +139,7 @@ class HandlerInstance:
         await self.service_handler.close()
 
 # %% ../../nbs/client/base.ipynb 7
-from .Log import CorrelationManager
+from .models import CorrelationManager
 
 @dataclass
 class Logger:
@@ -147,21 +147,26 @@ class Logger:
     
     handlers: List[HandlerInstance] = field(default_factory=list)
     app_name: Optional[str] = "default_app"
-    min_level: LogLevel = LogLevel.INFO  # Minimum level to log
+    show_debugging: bool = False  #- True shows DEBUG, False filters it
     
     # Correlation manager (auto-initialized)
     correlation_manager: Optional[CorrelationManager] = field(default_factory=CorrelationManager)
     
     def __post_init__(self):
-        """Initialize correlation manager"""
+        """Initialize correlation manager and set handler log levels based on show_debugging"""
         if self.correlation_manager is None:
             self.correlation_manager = CorrelationManager()
+        
+        # Set handler log levels based on show_debugging
+        debug_level = LogLevel.DEBUG if self.show_debugging else LogLevel.INFO
+        for handler in self.handlers:
+            handler.log_level = debug_level
     
     async def log(self, level: LogLevel, message: str, **context) -> bool:
         """Core logging method - creates entry with auto-correlation and writes to handlers"""
         
-        # Check if we should log this level
-        if level.value < self.min_level.value:
+        # Check if we should log this level - only filter DEBUG when show_debugging=False
+        if level == LogLevel.DEBUG and not self.show_debugging:
             return True
         
         # Auto-generate or get existing correlation
@@ -342,13 +347,14 @@ def get_global_logger() -> Logger:
         handler_instance = HandlerInstance(
             service_handler=console_handler,
             handler_name="default_console",
-            log_level=LogLevel.INFO
+            log_level=LogLevel.INFO  # Will be updated by Logger.__post_init__
         )
         
         # Create logger with default console handler
         _global_logger = Logger(
             handlers=[handler_instance],
-            app_name="default_app"
+            app_name="default_app",
+            show_debugging=False  # Default: no debugging
         )
     
     return _global_logger

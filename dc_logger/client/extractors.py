@@ -10,7 +10,7 @@ __all__ = ['EntityExtractor', 'HTTPDetailsExtractor', 'MultiTenantExtractor', 'R
 from abc import ABC, abstractmethod
 from typing import Optional, Callable, Any, Dict, Tuple
 
-from .Log import LogEntity, HTTPDetails, MultiTenant
+from .models import LogEntity, HTTPDetails, MultiTenant
 
 
 # %% ../../nbs/client/extractors.ipynb 4

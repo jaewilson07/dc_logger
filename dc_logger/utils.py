@@ -2,7 +2,7 @@ import re
 import inspect
 from typing import Optional
 
-from .client.models import Entity
+from .client.models import LogEntity
 
 
 def _find_calling_context() -> dict:
@@ -74,7 +74,7 @@ def _find_calling_context() -> dict:
     return result
 
 
-def _find_calling_entity() -> Optional[Entity]:
+def _find_calling_entity() -> Optional[LogEntity]:
     """Walk up the call stack to find Domo entity objects in calling methods"""
     context = _find_calling_context()
     return context.get('entity')
@@ -115,7 +115,7 @@ def _extract_entity_id_from_params(kwargs: dict) -> Optional[tuple]:
     return None, None
 
 
-def enhance_entity_from_response(entity: Optional[Entity], result) -> Optional[Entity]:
+def enhance_entity_from_response(entity: Optional[LogEntity], result) -> Optional[LogEntity]:
     """Enhance entity information from function response data - works for any entity type"""
     if not entity or not hasattr(result, 'response'):
         return entity
@@ -170,7 +170,7 @@ def enhance_entity_from_response(entity: Optional[Entity], result) -> Optional[E
     return entity
 
 
-def extract_entity_from_args(args, kwargs) -> Optional[Entity]:
+def extract_entity_from_args(args, kwargs) -> Optional[LogEntity]:
     """Extract entity information from function arguments and call stack"""
     
     # 1. Check if any argument is a Domo entity object

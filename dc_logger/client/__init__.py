@@ -9,13 +9,14 @@ from .exceptions import (
     LogFlushError
 )
 from .models import (
-    Entity,
+    LogEntity,
     HTTPDetails,
     Correlation,
     MultiTenant,
-    LogEntry
+    LogEntry,
+    CorrelationManager,
+    correlation_manager
 )
-from .correlation import CorrelationManager, correlation_manager
 
 __all__ = [
     # Enums
@@ -29,7 +30,7 @@ __all__ = [
     'LogFlushError',
     
     # Models
-    'Entity',
+    'LogEntity',
     'HTTPDetails',
     'Correlation',
     'MultiTenant',

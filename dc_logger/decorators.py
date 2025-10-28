@@ -387,7 +387,7 @@ async def _execute_with_logging(
                 entry = LogEntry.create(
                     level=level,
                     message=message,
-                    logger=logger.name if hasattr(logger, 'name') else str(type(logger).__name__),
+                    app_name=getattr(logger, 'app_name', 'default_app'),
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
                     level_name=config.level_name,
@@ -436,7 +436,7 @@ async def _execute_with_logging(
                 entry = LogEntry.create(
                     level=LogLevel.ERROR,
                     message=message,
-                    logger=logger.name if hasattr(logger, 'name') else str(type(logger).__name__),
+                    app_name=getattr(logger, 'app_name', 'default_app'),
                     duration_ms=duration_ms,
                     status="error",
                     **log_context,
@@ -498,7 +498,7 @@ def _execute_with_logging_sync(
             entry = LogEntry.create(
                 level=config.log_level,
                 message=f"{config.action_name or func.__qualname__} completed",
-                logger=logger.name if hasattr(logger, 'name') else str(type(logger).__name__),
+                app_name=getattr(logger, 'app_name', 'default_app'),
                 action=config.action_name or func.__qualname__,
                 entity=entity,
                 multi_tenant=multi_tenant,
@@ -554,7 +554,7 @@ def _execute_with_logging_sync(
             entry = LogEntry.create(
                 level=LogLevel.ERROR,
                 message=f"{config.action_name or func.__qualname__} failed: {str(e)}",
-                logger=logger.name if hasattr(logger, 'name') else str(type(logger).__name__),
+                app_name=getattr(logger, 'app_name', 'default_app'),
                 action=config.action_name or func.__qualname__,
                 entity=entity,
                 multi_tenant=multi_tenant,

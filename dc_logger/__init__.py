@@ -14,7 +14,7 @@ from .logger import DC_Logger, get_logger, set_global_logger
 from .client import (
     LogLevel,
     LogEntry,
-    Entity,
+    LogEntity,
     HTTPDetails,
     Correlation,
     MultiTenant,
@@ -48,7 +48,7 @@ __all__ = [
     # Core types
     "LogLevel",
     "LogEntry",
-    "Entity",
+    "LogEntity",
     "HTTPDetails",
     "Correlation",
     "MultiTenant",
