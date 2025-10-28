@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Optional, List, Dict, Any, Callable, Literal
+from typing import Optional, List, Dict, Any, Literal
 from dataclasses import dataclass, field
 import json
 import uuid
