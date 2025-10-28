@@ -33,7 +33,6 @@ class EntityExtractor(ABC):
         Returns:
             LogEntity or None if no entity found
         """
-        pass
 
 
 class HTTPDetailsExtractor(ABC):
@@ -53,7 +52,6 @@ class HTTPDetailsExtractor(ABC):
         Returns:
             HTTPDetails or None if no HTTP details found
         """
-        pass
 
 
 class MultiTenantExtractor(ABC):
@@ -73,7 +71,6 @@ class MultiTenantExtractor(ABC):
         Returns:
             MultiTenant or None if no multi-tenant info found
         """
-        pass
 
 
 class ResultProcessor(ABC):
@@ -92,7 +89,6 @@ class ResultProcessor(ABC):
         Returns:
             Tuple of (result_context dict, updated http_details)
         """
-        pass
 
 
 class KwargsEntityExtractor(EntityExtractor):
