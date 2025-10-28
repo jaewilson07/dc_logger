@@ -11,9 +11,9 @@ import inspect
 from functools import wraps
 from typing import Optional, Callable, Any, Dict
 
-from .client.models import LogEntry, LogLevel
-from .client.base import get_global_logger
-from .client.extractors import (
+from .Log import LogEntry, LogLevel
+from dc_logger.client.base import get_global_logger
+from dc_logger.client.extractors import (
     EntityExtractor, 
     HTTPDetailsExtractor, 
     MultiTenantExtractor, 
@@ -89,7 +89,7 @@ def log_call(
     - Liskov Substitution: Any extractor implementation works
     - Interface Segregation: Separate interfaces for different concerns
     - Dependency Inversion: Depends on abstractions, not implementations
-
+    
     Args:
         logger: Direct logger instance (takes precedence)
         logger_getter: Callable that returns a logger instance
@@ -209,30 +209,31 @@ def _create_log_call_decorator(
         if sensitive_params is not None:
             config.sensitive_params = sensitive_params
     
-        @wraps(func)
-        async def async_wrapper(*args, **kwargs):
-            # Get the logger instance
-            if logger is None:
-                if logger_getter is not None:
-                    injected_logger = logger_getter()
-                else:
-                    injected_logger = get_global_logger()
+    @wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        # Get the logger instance
+        if logger is None:
+            if logger_getter is not None:
+                injected_logger = logger_getter()
             else:
-                injected_logger = logger
-            
-            # Temporarily inject logger into the function's module globals
-            original_globals = func.__globals__.copy()
-            func.__globals__['logger'] = injected_logger
-            
-            try:
-                # Execute the function with logging
-                return await _execute_with_logging(
-                    func, args, kwargs, config, logger, logger_getter, is_async=True
-                )
-            finally:
-                # Restore original globals
-                func.__globals__.clear()
-                func.__globals__.update(original_globals)
+                from dc_logger.client.base import get_global_logger
+                injected_logger = get_global_logger()
+        else:
+            injected_logger = logger
+        
+        # Temporarily inject logger into the function's module globals
+        original_globals = func.__globals__.copy()
+        func.__globals__['logger'] = injected_logger
+        
+        try:
+            # Execute the function with logging
+            return await _execute_with_logging(
+                func, args, kwargs, config, logger, logger_getter, is_async=True
+            )
+        finally:
+            # Restore original globals
+            func.__globals__.clear()
+            func.__globals__.update(original_globals)
     
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
@@ -314,8 +315,9 @@ async def _execute_with_logging(
     if logger is None:
         if logger_getter is not None:
             logger = logger_getter()
-                    else:
+        else:
             # Import here to avoid circular imports
+            from dc_logger.client.base import get_global_logger
             logger = get_global_logger()
     
     # Extract context using injected extractors
@@ -325,26 +327,26 @@ async def _execute_with_logging(
     
     # Get caller information
     caller_frame = inspect.currentframe().f_back.f_back
-            caller_info = {
-                "file": caller_frame.f_code.co_filename,
-                "line": caller_frame.f_lineno,
-                "function": caller_frame.f_code.co_name,
-            }
-
+    caller_info = {
+        "file": caller_frame.f_code.co_filename,
+        "line": caller_frame.f_lineno,
+        "function": caller_frame.f_code.co_name,
+    }
+    
     # Build context
     log_context = {
         "action": config.action_name or func.__qualname__,
-                "entity": entity,
-                "multi_tenant": multi_tenant,
-                "http_details": http_details,
-            }
-
+        "entity": entity,
+        "multi_tenant": multi_tenant,
+        "http_details": http_details,
+    }
+    
     extra = {
         "function": func.__qualname__,
-                "module": func.__module__,
-                "caller": caller_info,
-            }
-
+        "module": func.__module__,
+        "caller": caller_info,
+    }
+    
     # Sanitize params if requested
     if config.include_params:
         safe_kwargs = _sanitize_params(kwargs, config.sensitive_params)
@@ -353,12 +355,12 @@ async def _execute_with_logging(
     try:
         # Execute function
         if is_async:
-                result = await func(*args, **kwargs)
+            result = await func(*args, **kwargs)
         else:
             result = func(*args, **kwargs)
-
-                duration_ms = int((time.time() - start_time) * 1000)
-
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        
         # Process result using injected processor
         result_context, updated_http = config.result_processor.process(result, http_details)
         if updated_http:
@@ -394,30 +396,29 @@ async def _execute_with_logging(
                 entry = LogEntry.create(
                     level=level,
                     message=message,
-                    logger="default",
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
                     level_name=config.level_name,
                     **log_context,
-                        **result_context,
+                    **result_context,
                     extra=extra
                 )
                 await logger.write(entry)
-
-                return result
-
-            except Exception as e:
-                duration_ms = int((time.time() - start_time) * 1000)
-
+        
+        return result
+        
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        
         # Extract error details
-                if hasattr(e, "status") and http_details:
-                    http_details.status_code = getattr(e, "status", None)
+        if hasattr(e, "status") and http_details:
+            http_details.status_code = getattr(e, "status", None)
             log_context["http_details"] = http_details
         
-                error_extra = {
+        error_extra = {
             **extra,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
+            "error_type": type(e).__name__,
+            "error_message": str(e),
         }
         
         # Log error
@@ -443,7 +444,6 @@ async def _execute_with_logging(
                 entry = LogEntry.create(
                     level=LogLevel.ERROR,
                     message=message,
-                    logger="default",
                     duration_ms=duration_ms,
                     status="error",
                     **log_context,
@@ -473,15 +473,15 @@ def _execute_with_logging_sync(
     if logger is None:
         if logger_getter is not None:
             logger = logger_getter()
-            else:
+        else:
             # Import here to avoid circular imports
             from dc_logger.client.base import get_global_logger
             logger = get_global_logger()
     
     try:
-                result = func(*args, **kwargs)
-                duration_ms = int((time.time() - start_time) * 1000)
-
+        result = func(*args, **kwargs)
+        duration_ms = int((time.time() - start_time) * 1000)
+        
         if logger:
             import asyncio
             
@@ -494,10 +494,9 @@ def _execute_with_logging_sync(
             if hasattr(logger, 'correlation_manager') and logger.correlation_manager:
                 correlation = logger.correlation_manager.get_or_create_correlation()
             
-                    entry = LogEntry.create(
+            entry = LogEntry.create(
                 level=config.log_level,
                 message=f"{config.action_name or func.__qualname__} completed",
-                logger="default",
                 action=config.action_name or func.__qualname__,
                 entity=entity,
                 multi_tenant=multi_tenant,
@@ -520,12 +519,12 @@ def _execute_with_logging_sync(
                 except RuntimeError:
                     # No event loop, create one
                     asyncio.run(logger.write(entry))
-
-                return result
-
-            except Exception as e:
-                duration_ms = int((time.time() - start_time) * 1000)
-
+        
+        return result
+        
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        
         # Logger is already resolved above, just use it
         if logger:
             import asyncio
@@ -540,15 +539,14 @@ def _execute_with_logging_sync(
                 correlation = logger.correlation_manager.get_or_create_correlation()
             
             entry = LogEntry.create(
-                    level=LogLevel.ERROR,
+                level=LogLevel.ERROR,
                 message=f"{config.action_name or func.__qualname__} failed: {str(e)}",
-                logger="default",
                 action=config.action_name or func.__qualname__,
                 entity=entity,
                 multi_tenant=multi_tenant,
                 http_details=http_details,
-                    duration_ms=duration_ms,
-                    status="error",
+                duration_ms=duration_ms,
+                status="error",
                 correlation=correlation,
                 extra={"error_type": type(e).__name__, "error_message": str(e)}
             )
@@ -567,8 +565,4 @@ def _execute_with_logging_sync(
                     # No event loop, create one
                     asyncio.run(logger.write(entry))
         
-                raise
-
-
-# Legacy alias for backward compatibility
-log_function_call = log_call
+        raise
