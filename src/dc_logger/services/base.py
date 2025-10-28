@@ -1,4 +1,3 @@
-
 __all__ = ["CloudServiceConfig", "CloudHandler"]
 
 import asyncio
@@ -58,7 +57,7 @@ class CloudHandler(ServiceHandler):
         try:
             return await self._write_pooling(entry)
         except Exception as e:
-            raise LogWriteError(f"Error sending logs to cloud provider: {e}")
+            raise LogWriteError(f"Error sending logs to cloud provider: {e}") from e
 
     def _get_hostname(self) -> str:
         """Get the actual hostname/IP address of the machine"""

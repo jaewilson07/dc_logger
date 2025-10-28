@@ -4,10 +4,11 @@ import socket
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from dc_logger.client.enums import LogLevel
-from dc_logger.client.exceptions import LogConfigError, LogHandlerError
-from dc_logger.client.models import LogEntry
-from dc_logger.logs.services.cloud.base import CloudHandler, CloudServiceConfig
+from ....client.enums import LogLevel
+from ....client.exceptions import LogConfigError, LogHandlerError
+from ....client.models import LogEntry
+from ....handlers.cloud.base import CloudHandler
+from ....services.base import CloudServiceConfig
 
 
 @dataclass

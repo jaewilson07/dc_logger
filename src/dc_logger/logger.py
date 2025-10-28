@@ -174,7 +174,6 @@ class DCLogger:
     def end_request(self):
         """End current request context"""
         # Clear context variables (they'll be reset on next request)
-        pass
 
     async def close(self):
         """Clean up resources"""

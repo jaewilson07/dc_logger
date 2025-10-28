@@ -35,14 +35,14 @@ from .configs import (
     create_file_datadog_config,
 )
 from .decorators import LogDecoratorConfig, log_call, log_function_call
-from .logger import DC_Logger, get_logger, set_global_logger
+from .logger import DCLogger, get_logger, set_global_logger
 from .utils import extract_entity_from_args
 
 __version__ = "1.0.1"
 
 __all__ = [
     # Main logger
-    "DC_Logger",
+    "DCLogger",
     "get_logger",
     "set_global_logger",
     # Core types

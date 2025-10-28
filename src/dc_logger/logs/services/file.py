@@ -1,4 +1,3 @@
-
 __all__ = ["FileServiceConfig", "FileHandler"]
 
 import csv
@@ -49,9 +48,11 @@ class FileHandler(ServiceHandler):
         except PermissionError as e:
             raise LogHandlerError(
                 f"Permissions denied creating directory {file_dir}: {e}"
-            )
+            ) from e
         except OSError as e:
-            raise LogHandlerError(f"OS error creating the directory {file_dir}: {e}")
+            raise LogHandlerError(
+                f"OS error creating the directory {file_dir}: {e}"
+            ) from e
 
     async def _write_json(self, entry: LogEntry) -> bool:
         """Write log entry to JSON file, maintaining proper JSON array format."""
@@ -90,7 +91,9 @@ class FileHandler(ServiceHandler):
 
             return True
         except Exception as e:
-            raise LogWriteError(f"Error writing JSON to file {self.file_path}: {e}")
+            raise LogWriteError(
+                f"Error writing JSON to file {self.file_path}: {e}"
+            ) from e
 
     async def _write_text(self, entry: LogEntry) -> bool:
         try:
@@ -124,7 +127,9 @@ class FileHandler(ServiceHandler):
                 f.write(line)
             return True
         except Exception as e:
-            raise LogWriteError(f"Error writing text to file {self.file_path}: {e}")
+            raise LogWriteError(
+                f"Error writing text to file {self.file_path}: {e}"
+            ) from e
 
     def _flatten_dict(self, d: dict, parent_key: str = "", sep: str = ".") -> dict:
         """Flatten nested dictionaries into dot notation"""
@@ -198,7 +203,9 @@ class FileHandler(ServiceHandler):
 
             return True
         except Exception as e:
-            raise LogWriteError(f"Error writing CSV to file {self.file_path}: {e}")
+            raise LogWriteError(
+                f"Error writing CSV to file {self.file_path}: {e}"
+            ) from e
 
     async def write(self, entries: List[LogEntry]) -> bool:
         """Write log entries to the file"""
@@ -221,7 +228,7 @@ class FileHandler(ServiceHandler):
             return True
 
         except Exception as e:
-            raise LogWriteError(f"Error writing to file {self.file_path}: {e}")
+            raise LogWriteError(f"Error writing to file {self.file_path}: {e}") from e
 
     async def flush(self) -> bool:
         """File writes are immediate; no flush needed"""

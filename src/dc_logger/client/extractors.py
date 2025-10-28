@@ -1,6 +1,5 @@
 """Extractor interfaces and implementations for extracting context from function calls"""
 
-
 __all__ = [
     "EntityExtractor",
     "HTTPDetailsExtractor",
@@ -37,7 +36,6 @@ class EntityExtractor(ABC):
         pass
 
 
-
 class HTTPDetailsExtractor(ABC):
     """Abstract base class for extracting HTTP details from function arguments."""
 
@@ -56,7 +54,6 @@ class HTTPDetailsExtractor(ABC):
             HTTPDetails or None if no HTTP details found
         """
         pass
-
 
 
 class MultiTenantExtractor(ABC):
@@ -96,7 +93,6 @@ class ResultProcessor(ABC):
             Tuple of (result_context dict, updated http_details)
         """
         pass
-
 
 
 class KwargsEntityExtractor(EntityExtractor):
@@ -176,7 +172,6 @@ class KwargsMultiTenantExtractor(MultiTenantExtractor):
         self, func: Callable, args: tuple, kwargs: dict
     ) -> Optional[MultiTenant]:
         return MultiTenant.from_kwargs(kwargs)
-
 
 
 class DefaultResultProcessor(ResultProcessor):

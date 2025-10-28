@@ -1,4 +1,3 @@
-
 __all__ = ["ConsoleServiceConfig", "ConsoleHandler"]
 
 import json

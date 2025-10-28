@@ -1,6 +1,5 @@
 """Base configuration classes and utilities for the logging library."""
 
-
 __all__ = [
     "OutputMode",
     "ServiceConfig",
@@ -80,16 +79,13 @@ class ServiceHandler(ABC):
     @abstractmethod
     async def write(self, entries: List[LogEntry]) -> bool:
         """Write log entries to destination"""
-        pass
 
     @abstractmethod
     async def flush(self) -> bool:
         """Flush any buffered entries"""
-        pass
 
     async def close(self):
         """Clean up resources"""
-        pass
 
 
 @dataclass
@@ -140,8 +136,6 @@ class HandlerInstance:
     async def close(self):
         """Clean up resources"""
         await self.service_handler.close()
-
-
 
 
 @dataclass

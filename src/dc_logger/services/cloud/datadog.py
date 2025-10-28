@@ -1,4 +1,3 @@
-
 __all__ = ["DatadogServiceConfig", "DatadogHandler"]
 
 import socket
