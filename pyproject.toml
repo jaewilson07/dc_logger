@@ -90,5 +90,8 @@ module = "dc_logger.*"
 ignore_missing_imports = true
 
 [tool.setuptools]
-packages = ["dc_logger"]
 package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dc_logger*"]
