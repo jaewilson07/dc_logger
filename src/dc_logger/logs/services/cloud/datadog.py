@@ -1,15 +1,19 @@
 __all__ = ["DatadogServiceConfig", "DatadogHandler"]
 
+import asyncio
+import concurrent.futures
 import socket
+import requests
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from ....client.base import OutputMode
-from ....client.enums import LogLevel
-from ....client.exceptions import LogConfigError, LogHandlerError
-from ....client.models import LogEntry
-from ....handlers.cloud.base import CloudHandler
-from ....services.base import CloudServiceConfig
+
+from dc_logger.client.base import OutputMode
+from dc_logger.client.enums import LogLevel
+from dc_logger.client.exceptions import LogConfigError, LogHandlerError
+from dc_logger.client.models import LogEntry
+from dc_logger.handlers.cloud.base import CloudHandler
+from dc_logger.services.base import CloudServiceConfig
 
 
 @dataclass
@@ -61,6 +65,7 @@ class DatadogHandler(CloudHandler):
 
     def __init__(self, config: Any) -> None:
         super().__init__(config)
+        self.config = config  # Store original config object
         self.cloud_config = config.to_platform_config()
         self._validate_config()
 
@@ -70,6 +75,12 @@ class DatadogHandler(CloudHandler):
         if not api_key:
             raise LogHandlerError("Datadog API key is required")
         return True
+
+    def validate_config(self) -> bool:
+        """Validate the configuration - required by ServiceHandler interface"""
+        if not self.config:
+            raise ValueError("Datadog configuration is not set.")
+        return self.config.validate_config()
 
     def _get_hostname(self) -> str:
         """Get the actual hostname/IP address of the machine"""
@@ -128,7 +139,7 @@ class DatadogHandler(CloudHandler):
                 "hostname": hostname,
                 "status": self._convert_log_level(entry.level),
                 "ddtags": f"env:{self.cloud_config.get('env', 'production')},service:{self.cloud_config.get('service', 'domolibrary')}",
-                "timestamp": entry.timestamp,
+                
             }
             if entry.entity:
                 log_data["entity"] = self._safe_serialize(entry.entity)
@@ -169,11 +180,15 @@ class DatadogHandler(CloudHandler):
             logs_data.append(log_data)
         return logs_data
 
-    async def _send_logs_simple_api(self, entries: List[LogEntry]) -> bool:
-        """Send logs using direct HTTP requests to Datadog"""
-        import requests
+    def _send_logs_simple_api(self, entries: List[LogEntry]) -> bool:
+        """Send logs using direct HTTP requests to Datadog (synchronous)"""
+        if requests is None:
+            raise ImportError(
+                "requests library is required for DatadogHandler. "
+                "Install it with: pip install requests"
+            )
 
-        intake_url = self.cloud_config.derive_intake_url()
+        intake_url = self.config.derive_intake_url()
         api_key = self.cloud_config.get("api_key")
         headers = {"Content-Type": "application/json", "DD-API-KEY": api_key}
         logs_data = self._convert_entry_for_provider(entries)
@@ -193,3 +208,13 @@ class DatadogHandler(CloudHandler):
             f"DatadogHandler: Successfully sent {len(logs_data)} log entries to Datadog"
         )
         return True
+
+    async def _send_to_cloud(self, entries: List[LogEntry]) -> bool:
+        """Send log entries to Datadog - implements abstract method from CloudHandler"""
+        def submit_logs():
+            return self._send_logs_simple_api(entries)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(submit_logs)
+            result = await asyncio.wrap_future(future)
+            return bool(result)
