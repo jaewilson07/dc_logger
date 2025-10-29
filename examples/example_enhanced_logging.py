@@ -14,20 +14,20 @@ from dc_logger.client.models import LogLevel
 
 from dc_logger import log_call
 from dc_logger.client.base import (
-    Handler_BufferSettings,
+    HandlerBufferSettings,
     HandlerInstance,
     Logger,
     set_global_logger,
 )
-from dc_logger.services.console.base import Console_ServiceConfig, ConsoleHandler
+from dc_logger.services.console.base import ConsoleServiceConfig, ConsoleHandler
 
 # Set up JSON console logger to see the actual output
-console_config = Console_ServiceConfig(
+console_config = ConsoleServiceConfig(
     output_mode="console",
     output_type="json"
 )
 
-buffer_settings = Handler_BufferSettings()
+buffer_settings = HandlerBufferSettings()
 console_handler = ConsoleHandler(
     buffer_settings=buffer_settings,
     service_config=console_config
