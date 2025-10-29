@@ -396,15 +396,28 @@ async def _execute_with_logging(
 
             # Use logger.log() to get automatic correlation generation
             if is_async and hasattr(logger, "log"):
+                merged_extra = extra.copy()
+                if "extra" in result_context:
+                    merged_extra.update(result_context["extra"])
+                    # Remove extra from result_context to avoid duplicate keyword argument
+                    result_context_without_extra = {
+                        k: v for k, v in result_context.items() if k != "extra"
+                    }
+                else:
+                    result_context_without_extra = result_context
+
+                # Merge log_context and result_context, with result_context taking precedence
+                merged_context = log_context.copy()
+                merged_context.update(result_context_without_extra)
+
                 await logger.log(
                     level=level,
                     message=message,
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
                     level_name=config.level_name,
-                    **log_context,
-                    **result_context,
-                    extra=extra,
+                    **merged_context,
+                    extra=merged_extra,
                 )
             elif hasattr(logger, "write"):
                 # Fallback: manually generate correlation if logger has correlation_manager
@@ -450,6 +463,19 @@ async def _execute_with_logging(
 
             # Use logger.log() to get automatic correlation generation
             if is_async and hasattr(logger, "log"):
+                merged_extra = error_extra.copy()
+                if "extra" in result_context:
+                    merged_extra.update(result_context["extra"])
+                    result_context_without_extra = {
+                        k: v for k, v in result_context.items() if k != "extra"
+                    }
+                else:
+                    result_context_without_extra = result_context
+
+                if result_context:
+                    merged_context_error = log_context.copy()
+                    merged_context_error.update(result_context_without_extra)
+
                 await logger.log(
                     level=LogLevel.ERROR,
                     message=message,

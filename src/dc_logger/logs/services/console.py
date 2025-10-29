@@ -13,6 +13,7 @@ class ConsoleServiceConfig(ServiceConfig):
     """Console-specific log configuration"""
 
     output_mode: OutputMode = "console"
+    format: str = "text"
 
     def validate_config(self) -> bool:
         return True
