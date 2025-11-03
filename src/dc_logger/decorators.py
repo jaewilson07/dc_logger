@@ -369,6 +369,7 @@ async def _execute_with_logging(
         safe_kwargs = _sanitize_params(kwargs, config.sensitive_params)
         extra["parameters"] = safe_kwargs
 
+    result_context = {}
     try:
         # Execute function
         if is_async:
