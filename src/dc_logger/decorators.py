@@ -369,6 +369,7 @@ async def _execute_with_logging(
         safe_kwargs = _sanitize_params(kwargs, config.sensitive_params)
         extra["parameters"] = safe_kwargs
 
+    result_context = {}
     try:
         # Execute function
         if is_async:
@@ -475,13 +476,15 @@ async def _execute_with_logging(
                 if result_context:
                     merged_context_error = log_context.copy()
                     merged_context_error.update(result_context_without_extra)
+                else:
+                    merged_context_error = log_context
 
                 await logger.log(
                     level=LogLevel.ERROR,
                     message=message,
                     duration_ms=duration_ms,
                     status="error",
-                    **log_context,
+                    **merged_context_error,
                     extra=error_extra,
                 )
             elif hasattr(logger, "write"):
