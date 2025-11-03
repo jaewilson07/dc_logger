@@ -38,7 +38,7 @@ from .decorators import LogDecoratorConfig, log_call, log_function_call
 from .logger import DCLogger, get_logger, set_global_logger
 from .utils import extract_entity_from_args
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 __all__ = [
     # Main logger
