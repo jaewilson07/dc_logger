@@ -22,6 +22,16 @@ jobs:
             - name: Install dependencies
               run: uv sync --dev
 
+            - name: Install dev extras
+              run: |
+                uv run python -m pip install --upgrade pip
+                uv run python -m pip install ".[dev]"
+
+            - name: Debug ensure ruff is available
+              run: |
+                uv run which ruff || echo "ruff not found in uv environment"
+                uv run ruff --version || true
+
             - name: Run ruff
               run: uv run ruff check .
 
