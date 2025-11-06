@@ -98,6 +98,7 @@ def strip_ansi_codes(text: str) -> str:
     Returns:
         Text with all ANSI codes removed
     """
-    # Pattern to match ANSI escape sequences
-    ansi_escape = re.compile(r'\033\[[0-9;]*m')
+    # Pattern to match all ANSI escape sequences
+    # Matches sequences like \033[0m, \033[31m, \033[1;32m, etc.
+    ansi_escape = re.compile(r'\033\[[0-9;]*[a-zA-Z]')
     return ansi_escape.sub('', text)
