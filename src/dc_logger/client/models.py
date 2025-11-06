@@ -593,6 +593,7 @@ class LogEntry:
     extra: Dict[str, Any] = field(default_factory=dict)
 
     # Console output customization
+    # Color for console output (e.g., 'red', 'green', 'blue', 'yellow', 'bold_red', 'dim_blue')
     color: Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -654,6 +655,10 @@ class LogEntry:
         # Add extra (only if not empty)
         if self.extra:
             result["extra"] = self.extra
+
+        # Add color (only if specified)
+        if self.color:
+            result["color"] = self.color
 
         return result
 

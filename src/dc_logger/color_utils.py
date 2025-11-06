@@ -1,5 +1,6 @@
 """ANSI color codes for console output"""
 
+import re
 from typing import Optional
 
 # ANSI color codes
@@ -97,7 +98,6 @@ def strip_ansi_codes(text: str) -> str:
     Returns:
         Text with all ANSI codes removed
     """
-    import re
     # Pattern to match ANSI escape sequences
     ansi_escape = re.compile(r'\033\[[0-9;]*m')
     return ansi_escape.sub('', text)
