@@ -592,6 +592,9 @@ class LogEntry:
     # Flexible metadata
     extra: Dict[str, Any] = field(default_factory=dict)
 
+    # Console output customization
+    color: Optional[str] = None
+
     def __post_init__(self) -> None:
         # Only override method from http_details if method is still default
         if self.http_details and self.method == "COMMENT" and self.http_details.method:
@@ -671,6 +674,7 @@ class LogEntry:
         duration_ms = kwargs.get("duration_ms")
         method = kwargs.get("method", "COMMENT")  # Extract method from kwargs
         extra = kwargs.get("extra", {})
+        color = kwargs.get("color")
 
         entity_obj = LogEntity.from_any(kwargs.get("entity"))
 
@@ -705,6 +709,7 @@ class LogEntry:
             multi_tenant=multi_tenant_obj,
             http_details=http_details_obj,
             extra=extra,
+            color=color,
         )
 
     def _serialize_http_details(self) -> Optional[Dict[str, Any]]:

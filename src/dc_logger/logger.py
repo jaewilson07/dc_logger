@@ -119,6 +119,7 @@ class DCLogger:
             multi_tenant=context.get("multi_tenant"),
             http_details=context.get("http_details"),
             extra=context.get("extra", {}),
+            color=context.get("color"),
         )
 
         # Add to buffer
