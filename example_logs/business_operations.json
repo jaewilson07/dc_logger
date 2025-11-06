@@ -1,0 +1,377 @@
+[
+  {
+    "timestamp": "2025-11-06T14:29:43.375959Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending notification to user USER-888: Thank you for your business!",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "6f689637072e4b2b",
+      "parent_span_id": "1bef02361caa4c8d"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.377078Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Validating user permissions",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "7c80bb52d93a4458",
+      "parent_span_id": "6f689637072e4b2b"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.378356Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Formatting message",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "9228954157d34f42",
+      "parent_span_id": "7c80bb52d93a4458"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.379426Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending via email/SMS",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "6c43f63150ad40c2",
+      "parent_span_id": "9228954157d34f42"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.380512Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "send_notification completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 4,
+    "action": "send_notification",
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "5f5ccac2e0044bd1",
+      "parent_span_id": "6c43f63150ad40c2"
+    },
+    "extra": {
+      "function": "send_notification",
+      "module": "__main__",
+      "caller": {
+        "file": "c:\\GitHub\\dc_logger\\examples\\example_global_logger_injection.py",
+        "line": 164,
+        "function": "main"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.375903Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "1bef02361caa4c8d",
+      "parent_span_id": null
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.381764Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "calculate_tax completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "calculate_tax",
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "e10e7ec8ef90422a",
+      "parent_span_id": "5f5ccac2e0044bd1"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:29:43.382453Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "299df234-e58b-4019-b35f-3e0f8fdad20f",
+      "span_id": "0c09ae56993b428c",
+      "parent_span_id": "e10e7ec8ef90422a"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.703928Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending notification to user USER-888: Thank you for your business!",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "558892e07c644313",
+      "parent_span_id": "2c460c5442d04e85"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.705893Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Validating user permissions",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "0a9dc52754554568",
+      "parent_span_id": "558892e07c644313"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.707464Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Formatting message",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "522fd5b8f1e64356",
+      "parent_span_id": "0a9dc52754554568"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.708693Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending via email/SMS",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "a143c39ea75244ae",
+      "parent_span_id": "522fd5b8f1e64356"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.709940Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "send_notification completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 6,
+    "action": "send_notification",
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "7a30832943274460",
+      "parent_span_id": "a143c39ea75244ae"
+    },
+    "extra": {
+      "function": "send_notification",
+      "module": "__main__",
+      "caller": {
+        "file": "c:\\GitHub\\dc_logger\\examples\\example_global_logger_injection.py",
+        "line": 164,
+        "function": "main"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.703862Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "2c460c5442d04e85",
+      "parent_span_id": null
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.711615Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "calculate_tax completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "calculate_tax",
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "833c3c656f984437",
+      "parent_span_id": "7a30832943274460"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:31:06.712599Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "8963941c-95a6-41a5-93a3-a7da70f8d383",
+      "span_id": "ad04a0fe53744b53",
+      "parent_span_id": "833c3c656f984437"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.375928Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending notification to user USER-888: Thank you for your business!",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "3350eacb3f9e45dc",
+      "parent_span_id": "0663a861a4d54784"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.377781Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Validating user permissions",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "5bcc662da2fc487c",
+      "parent_span_id": "3350eacb3f9e45dc"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.379297Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Formatting message",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "f4a635feb7f144b3",
+      "parent_span_id": "5bcc662da2fc487c"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.380703Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "Sending via email/SMS",
+    "method": "COMMENT",
+    "status": "info",
+    "duration_ms": null,
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "14dc198c09ee40b3",
+      "parent_span_id": "f4a635feb7f144b3"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.382355Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "send_notification completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 6,
+    "action": "send_notification",
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "58e2707bdeaf420a",
+      "parent_span_id": "14dc198c09ee40b3"
+    },
+    "extra": {
+      "function": "send_notification",
+      "module": "__main__",
+      "caller": {
+        "file": "c:\\GitHub\\dc_logger\\examples\\example_global_logger_injection.py",
+        "line": 164,
+        "function": "main"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.375869Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "0663a861a4d54784",
+      "parent_span_id": null
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.384749Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "calculate_tax completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "calculate_tax",
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "be462547a8e645e5",
+      "parent_span_id": "58e2707bdeaf420a"
+    }
+  },
+  {
+    "timestamp": "2025-11-06T14:32:46.385442Z",
+    "level": "INFO",
+    "app_name": "business_operations",
+    "message": "process_order completed",
+    "method": "COMMENT",
+    "status": "success",
+    "duration_ms": 0,
+    "action": "process_order",
+    "correlation": {
+      "trace_id": "b0d38ab7-8e81-4f71-8a01-ee79e6a56685",
+      "span_id": "0dba4bd040b04290",
+      "parent_span_id": "be462547a8e645e5"
+    }
+  }
+]

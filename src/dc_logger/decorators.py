@@ -35,6 +35,7 @@ class LogDecoratorConfig:
         result_processor: Optional[ResultProcessor] = None,
         include_params: bool = False,
         sensitive_params: Optional[list] = None,
+        color: Optional[str] = None,
     ):
         """
         Args:
@@ -47,10 +48,12 @@ class LogDecoratorConfig:
             result_processor: Custom processor for function results
             include_params: Whether to include function parameters in logs
             sensitive_params: List of parameter names to sanitize
+            color: Console color for log output (e.g., 'red', 'green', 'blue', 'yellow')
         """
         self.action_name = action_name
         self.level_name = level_name
         self.log_level = log_level
+        self.color = color
 
         # Dependency injection with default implementations
         self.entity_extractor = entity_extractor or KwargsEntityExtractor()
@@ -81,6 +84,7 @@ def log_call(
     include_params: bool = False,
     sensitive_params: Optional[list] = None,
     config: Optional[LogDecoratorConfig] = None,
+    color: Optional[str] = None,
 ) -> Any:
     """
     Decorator to automatically log function calls with full dependency injection support.
@@ -100,6 +104,7 @@ def log_call(
         include_params: Whether to include function parameters in logs
         sensitive_params: List of parameter names to sanitize
         config: LogDecoratorConfig for custom extractors (optional)
+        color: Console color for log output (e.g., 'red', 'green', 'blue', 'yellow')
 
     Examples:
         Basic usage:
@@ -160,6 +165,7 @@ def log_call(
             include_params=include_params,
             sensitive_params=sensitive_params,
             config=config,
+            color=color,
         )
     else:
         # Called as @log_call(...) (with arguments)
@@ -174,6 +180,7 @@ def log_call(
                 include_params=include_params,
                 sensitive_params=sensitive_params,
                 config=config,
+                color=color,
             )
 
         return decorator
@@ -189,6 +196,7 @@ def _create_log_call_decorator(
     include_params: bool = False,
     sensitive_params: Optional[list] = None,
     config: Optional[LogDecoratorConfig] = None,
+    color: Optional[str] = None,
 ) -> Any:
     """Create the actual decorator with logger injection."""
     # Merge direct parameters with config
@@ -199,6 +207,7 @@ def _create_log_call_decorator(
             log_level=log_level,
             include_params=include_params,
             sensitive_params=sensitive_params,
+            color=color,
         )
     else:
         # Override config with direct parameters if provided
@@ -212,6 +221,8 @@ def _create_log_call_decorator(
             config.include_params = include_params
         if sensitive_params is not None:
             config.sensitive_params = sensitive_params
+        if color is not None:
+            config.color = color
 
     @wraps(func)
     async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -417,6 +428,7 @@ async def _execute_with_logging(
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
                     level_name=config.level_name,
+                    color=config.color,
                     **merged_context,
                     extra=merged_extra,
                 )
@@ -436,6 +448,7 @@ async def _execute_with_logging(
                     duration_ms=duration_ms,
                     status="error" if is_error else "success",
                     level_name=config.level_name,
+                    color=config.color,
                     **log_context,
                     **result_context,
                     extra=extra,
@@ -484,6 +497,7 @@ async def _execute_with_logging(
                     message=message,
                     duration_ms=duration_ms,
                     status="error",
+                    color=config.color,
                     **merged_context_error,
                     extra=error_extra,
                 )
@@ -502,6 +516,7 @@ async def _execute_with_logging(
                     app_name=getattr(logger, "app_name", "default_app"),
                     duration_ms=duration_ms,
                     status="error",
+                    color=config.color,
                     **log_context,
                     extra=error_extra,
                 )
@@ -572,6 +587,7 @@ def _execute_with_logging_sync(
                 duration_ms=duration_ms,
                 status="success",
                 correlation=correlation,
+                color=config.color,
             )
 
             # Only add http_details if it's not None (i.e., not COMMENT method)
@@ -636,6 +652,7 @@ def _execute_with_logging_sync(
                 duration_ms=duration_ms,
                 status="error",
                 correlation=correlation,
+                color=config.color,
                 extra={"error_type": type(e).__name__, "error_message": str(e)},
             )
 

@@ -36,7 +36,7 @@ def process_order(order_id: str, customer_id: str):
 
     return f"order_{order_id}_processed"
 
-@log_call
+@log_call()
 async def send_notification(user_id: str, message: str):
     """Send notification - uses injected logger."""
     await logger.info(f"Sending notification to user {user_id}: {message}")
