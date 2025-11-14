@@ -10,11 +10,11 @@ from .base import LogHandler
 # Default color mapping for log levels
 # Using distinct colors with ANSI styles for better visual hierarchy
 DEFAULT_LOG_COLORS = {
-    LogLevel.DEBUG: "cyan",           # Cyan for debug (less prominent)
-    LogLevel.INFO: "bright_green",    # Bright green for info (positive, prominent)
-    LogLevel.WARNING: "bright_yellow", # Bright yellow for warnings (attention)
-    LogLevel.ERROR: "bright_red",     # Bright red for errors (urgent)
-    LogLevel.CRITICAL: "bold_red",    # Bold red for critical (very urgent)
+    LogLevel.DEBUG: "cyan",  # Cyan for debug (less prominent)
+    LogLevel.INFO: "bright_green",  # Bright green for info (positive, prominent)
+    LogLevel.WARNING: "bright_yellow",  # Bright yellow for warnings (attention)
+    LogLevel.ERROR: "bright_red",  # Bright red for errors (urgent)
+    LogLevel.CRITICAL: "bold_red",  # Bold red for critical (very urgent)
 }
 
 
@@ -24,9 +24,9 @@ class ConsoleHandler(LogHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Configure stdout to use UTF-8 encoding for emoji support
-        if hasattr(sys.stdout, 'reconfigure'):
+        if hasattr(sys.stdout, "reconfigure"):
             try:
-                sys.stdout.reconfigure(encoding='utf-8')
+                sys.stdout.reconfigure(encoding="utf-8")
             except Exception:
                 pass  # Silently fail if reconfiguration not supported
 
@@ -62,12 +62,12 @@ class ConsoleHandler(LogHandler):
                 else:
                     # Text format with enhanced colorization
                     from ..color_utils import colorize
-                    
+
                     # Color different parts of the log line
                     timestamp = colorize(f"[{entry.timestamp}]", "gray")
                     level = colorize(entry.level.value.upper(), color)
                     app_name = colorize(entry.app_name, "blue")
-                    
+
                     log_line = f"{timestamp} {level} {app_name}: {entry.message}"
                     print(log_line)
             return True

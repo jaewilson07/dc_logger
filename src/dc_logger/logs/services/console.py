@@ -26,9 +26,9 @@ class ConsoleHandler(ServiceHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Configure stdout to use UTF-8 encoding for emoji support
-        if hasattr(sys.stdout, 'reconfigure'):
+        if hasattr(sys.stdout, "reconfigure"):
             try:
-                sys.stdout.reconfigure(encoding='utf-8')
+                sys.stdout.reconfigure(encoding="utf-8")
             except Exception:
                 pass  # Silently fail if reconfiguration not supported
 
