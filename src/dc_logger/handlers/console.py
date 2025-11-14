@@ -61,7 +61,6 @@ class ConsoleHandler(LogHandler):
                         print(json_output)
                 else:
                     # Text format with enhanced colorization
-                    from ..color_utils import colorize
 
                     # Color different parts of the log line
                     timestamp = colorize(f"[{entry.timestamp}]", "gray")
