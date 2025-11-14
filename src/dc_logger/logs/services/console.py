@@ -2,6 +2,7 @@ __all__ = ["ConsoleServiceConfig", "ConsoleHandler"]
 
 
 import json
+import sys
 from dataclasses import dataclass
 from typing import List
 
@@ -21,6 +22,15 @@ class ConsoleServiceConfig(ServiceConfig):
 
 class ConsoleHandler(ServiceHandler):
     """Handler for console output"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Configure stdout to use UTF-8 encoding for emoji support
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8')
+            except Exception:
+                pass  # Silently fail if reconfiguration not supported
 
     async def _write_json(self, entry: LogEntry) -> bool:
         message = json.dumps(entry.to_dict(), indent=2, default=str)
@@ -49,7 +59,7 @@ class ConsoleHandler(ServiceHandler):
             return True
         except Exception as e:
             print(f"Error writing to console: {e}")
-            return False
+            raise
 
     async def flush(self) -> bool:
         """Console output doesn't need flushing"""

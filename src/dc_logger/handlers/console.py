@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import List
 
 from ..client.enums import LogLevel
@@ -19,6 +20,15 @@ DEFAULT_LOG_COLORS = {
 
 class ConsoleHandler(LogHandler):
     """Handler for console output"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Configure stdout to use UTF-8 encoding for emoji support
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8')
+            except Exception:
+                pass  # Silently fail if reconfiguration not supported
 
     def _get_color_for_entry(self, entry: LogEntry) -> str:
         """Get the color for a log entry, using default if not specified"""
@@ -63,7 +73,7 @@ class ConsoleHandler(LogHandler):
             return True
         except Exception as e:
             print(f"Error writing to console: {e}")
-            return False
+            raise
 
     async def flush(self) -> bool:
         """Console output doesn't need flushing"""
