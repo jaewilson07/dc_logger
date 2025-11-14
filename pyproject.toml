@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
     "pydantic",
     "typing-extensions",
+    "requests"
 ]
 
 [project.optional-dependencies]
