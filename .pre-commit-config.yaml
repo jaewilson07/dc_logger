@@ -13,14 +13,6 @@ repos:
           - id: check-merge-conflict
           - id: check-added-large-files
 
-    # Ruff: Fast linting and formatting (replaces black, isort, flake8)
-    - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.8.2
-      hooks:
-          - id: ruff
-            args: [--fix]
-          - id: ruff-format
-
     # Jupyter notebook cleaning
     - repo: https://github.com/kynan/nbstripout
       rev: 0.8.1
@@ -28,7 +20,15 @@ repos:
           - id: nbstripout
             files: \.ipynb$
 
-    # Local hooks
+    # Linting and formatting with ruff
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: main
+      hooks:
+          - id: ruff
+            args: [--fix]
+          - id: ruff-format
+
+    # Security scanning - use local system installation
     - repo: local
       hooks:
           - id: sync-version
