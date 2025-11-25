@@ -1,15 +1,10 @@
-# Pre-commit configuration optimized to minimize virtualenv/setuptools errors
-# Uses system language where possible to avoid creating isolated environments
-
-# Global configuration
-# fail_fast: false
-# default_language_version:
-#     python: python3.11
+# Pre-commit configuration optimized for speed with ruff
+# Ruff replaces black, isort, and flake8 for linting and formatting
 
 repos:
     # General hooks
     - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v6.0.0
+      rev: v5.0.0
       hooks:
           - id: trailing-whitespace
           - id: end-of-file-fixer
@@ -18,40 +13,22 @@ repos:
           - id: check-merge-conflict
           - id: check-added-large-files
 
-    # Python formatting
-    - repo: https://github.com/psf/black
-      rev: 24.8.0
+    # Ruff: Fast linting and formatting (replaces black, isort, flake8)
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.8.2
       hooks:
-          - id: black
-            files: ^src/
-            additional_dependencies: ["setuptools==70.0.0"]
-
-    # Import sorting
-    - repo: https://github.com/pycqa/isort
-      rev: 7.0.0
-      hooks:
-          - id: isort
-            args: ["--profile", "black"]
-            files: ^src/
+          - id: ruff
+            args: [--fix]
+          - id: ruff-format
 
     # Jupyter notebook cleaning
     - repo: https://github.com/kynan/nbstripout
-      rev: 0.7.1
+      rev: 0.8.1
       hooks:
           - id: nbstripout
             files: \.ipynb$
 
-    # Linting
-    - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.6.9
-      hooks:
-          - id: ruff
-            args: [--fix]
-            files: ^src/
-          - id: ruff-format
-            files: ^src/
-
-    # Security scanning - use local system installation
+    # Local hooks
     - repo: local
       hooks:
           - id: sync-version
@@ -62,17 +39,16 @@ repos:
             pass_filenames: false
 
           - id: bandit
-            name: bandit
+            name: bandit security check
             entry: python -m bandit
             language: system
             types: [python]
             args: ["-c", "pyproject.toml", "-ll"]
             files: ^src/
-            fail_fast: false
 
-    # # Type checking
+    # Type checking
     - repo: https://github.com/pre-commit/mirrors-mypy
-      rev: v1.11.2
+      rev: v1.13.0
       hooks:
           - id: mypy
             additional_dependencies: [types-requests]
@@ -83,14 +59,3 @@ repos:
                     --explicit-package-bases,
                 ]
             files: ^src/
-
-    # Testing (commented out due to import issues)
-    # - repo: local
-    #   hooks:
-    #     - id: pytest
-    #       name: pytest
-    #       entry: python -m pytest
-    #       language: system
-    #       pass_filenames: false
-    #       args: [tests/]
-    #       stages: [pre-push]
