@@ -1,251 +1,289 @@
 ---
-description: 'Guidelines for creating high-quality custom instruction files for GitHub Copilot'
-applyTo: '**/*.instructions.md'
+applyTo: "**/*.py"
 ---
 
-# Custom Instructions File Guidelines
+# DC Logger - Usage Instructions and Best Practices
 
-Instructions for creating effective and maintainable custom instruction files that guide GitHub Copilot in generating domain-specific code and following project conventions.
+## Library Overview
 
-## Project Context
+DC Logger is an async-first structured logging library for Python applications. It provides:
+- Async logging methods for non-blocking I/O
+- Multiple output handlers (console, file, cloud)
+- Distributed tracing with correlation IDs
+- Decorator-based automatic function logging
+- Cloud integrations (Datadog, AWS, GCP, Azure)
 
-- Target audience: Developers and GitHub Copilot working with domain-specific code
-- File format: Markdown with YAML frontmatter
-- File naming convention: lowercase with hyphens (e.g., `react-best-practices.instructions.md`)
-- Location: `.github/instructions/` directory
-- Purpose: Provide context-aware guidance for code generation, review, and documentation
+## Quick Start
 
-## Required Frontmatter
+### Minimal Setup
 
-Every instruction file must include YAML frontmatter with the following fields:
+```python
+import asyncio
+from dc_logger import DCLogger, ConsoleLogConfig, LogLevel
 
-```yaml
----
-description: 'Brief description of the instruction purpose and scope'
-applyTo: 'glob pattern for target files (e.g., **/*.ts, **/*.py)'
----
+async def main():
+    config = ConsoleLogConfig(level=LogLevel.INFO)
+    logger = DCLogger(config, "my_app")
+    await logger.info("Hello, dc_logger!")
+    await logger.close()
+
+asyncio.run(main())
 ```
 
-### Frontmatter Guidelines
+### Using Global Logger
 
-- **description**: Single-quoted string, 1-500 characters, clearly stating the purpose
-- **applyTo**: Glob pattern(s) specifying which files these instructions apply to
-  - Single pattern: `'**/*.ts'`
-  - Multiple patterns: `'**/*.ts, **/*.tsx, **/*.js'`
-  - Specific files: `'src/**/*.py'`
-  - All files: `'**'`
+```python
+from dc_logger import get_logger
 
-## File Structure
-
-A well-structured instruction file should include the following sections:
-
-### 1. Title and Overview
-
-- Clear, descriptive title using `#` heading
-- Brief introduction explaining the purpose and scope
-- Optional: Project context section with key technologies and versions
-
-### 2. Core Sections
-
-Organize content into logical sections based on the domain:
-
-- **General Instructions**: High-level guidelines and principles
-- **Best Practices**: Recommended patterns and approaches
-- **Code Standards**: Naming conventions, formatting, style rules
-- **Architecture/Structure**: Project organization and design patterns
-- **Common Patterns**: Frequently used implementations
-- **Security**: Security considerations (if applicable)
-- **Performance**: Optimization guidelines (if applicable)
-- **Testing**: Testing standards and approaches (if applicable)
-
-### 3. Examples and Code Snippets
-
-Provide concrete examples with clear labels:
-
-```markdown
-### Good Example
-\`\`\`language
-// Recommended approach
-code example here
-\`\`\`
-
-### Bad Example
-\`\`\`language
-// Avoid this pattern
-code example here
-\`\`\`
+logger = get_logger("my_app")
+# Use in async context
+await logger.info("Using global logger")
 ```
 
-### 4. Validation and Verification (Optional but Recommended)
+## Core Imports
 
-- Build commands to verify code
-- Linting and formatting tools
-- Testing requirements
-- Verification steps
+```python
+# Essential imports
+from dc_logger import DCLogger, ConsoleLogConfig, LogLevel
 
-## Content Guidelines
+# With entities and context
+from dc_logger import LogEntity, HTTPDetails, MultiTenant
 
-### Writing Style
+# Decorators
+from dc_logger import log_call, LogDecoratorConfig
 
-- Use clear, concise language
-- Write in imperative mood ("Use", "Implement", "Avoid")
-- Be specific and actionable
-- Avoid ambiguous terms like "should", "might", "possibly"
-- Use bullet points and lists for readability
-- Keep sections focused and scannable
+# Correlation tracking
+from dc_logger import correlation_manager
 
-### Best Practices
-
-- **Be Specific**: Provide concrete examples rather than abstract concepts
-- **Show Why**: Explain the reasoning behind recommendations when it adds value
-- **Use Tables**: For comparing options, listing rules, or showing patterns
-- **Include Examples**: Real code snippets are more effective than descriptions
-- **Stay Current**: Reference current versions and best practices
-- **Link Resources**: Include official documentation and authoritative sources
-
-### Common Patterns to Include
-
-1. **Naming Conventions**: How to name variables, functions, classes, files
-2. **Code Organization**: File structure, module organization, import order
-3. **Error Handling**: Preferred error handling patterns
-4. **Dependencies**: How to manage and document dependencies
-5. **Comments and Documentation**: When and how to document code
-6. **Version Information**: Target language/framework versions
-
-## Patterns to Follow
-
-### Bullet Points and Lists
-
-```markdown
-## Security Best Practices
-
-- Always validate user input before processing
-- Use parameterized queries to prevent SQL injection
-- Store secrets in environment variables, never in code
-- Implement proper authentication and authorization
-- Enable HTTPS for all production endpoints
+# Factory functions
+from dc_logger import (
+    create_console_config,
+    create_file_config,
+    create_console_file_config,
+    create_console_datadog_config,
+)
 ```
 
-### Tables for Structured Information
+## Logging Best Practices
 
-```markdown
-## Common Issues
+### 1. Always Close the Logger
 
-| Issue            | Solution            | Example                       |
-| ---------------- | ------------------- | ----------------------------- |
-| Magic numbers    | Use named constants | `const MAX_RETRIES = 3`       |
-| Deep nesting     | Extract functions   | Refactor nested if statements |
-| Hardcoded values | Use configuration   | Store API URLs in config      |
+```python
+async def main():
+    logger = DCLogger(config, "my_app")
+    try:
+        await run_application()
+    finally:
+        await logger.close()  # Always close to flush logs
 ```
 
-### Code Comparison
+### 2. Use Structured Context Instead of String Formatting
 
-```markdown
-### Good Example - Using TypeScript interfaces
-\`\`\`typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+```python
+# ❌ Bad: String concatenation
+await logger.info(f"User {user_id} logged in from {ip}")
 
-function getUser(id: string): User {
-  // Implementation
-}
-\`\`\`
-
-### Bad Example - Using any type
-\`\`\`typescript
-function getUser(id: any): any {
-  // Loses type safety
-}
-\`\`\`
+# ✅ Good: Structured context
+await logger.info(
+    "User logged in",
+    user=user_id,
+    extra={"ip": ip}
+)
 ```
 
-### Conditional Guidance
+### 3. Use Entities for Consistent Logging
 
-```markdown
-## Framework Selection
+```python
+from dc_logger import LogEntity
 
-- **For small projects**: Use Minimal API approach
-- **For large projects**: Use controller-based architecture with clear separation
-- **For microservices**: Consider domain-driven design patterns
+entity = LogEntity(
+    type="dataset",
+    id="ds_123",
+    name="Sales Data"
+)
+
+await logger.info("Dataset processed", entity=entity)
 ```
 
-## Patterns to Avoid
+### 4. Use Decorators for Function Logging
 
-- **Overly verbose explanations**: Keep it concise and scannable
-- **Outdated information**: Always reference current versions and practices
-- **Ambiguous guidelines**: Be specific about what to do or avoid
-- **Missing examples**: Abstract rules without concrete code examples
-- **Contradictory advice**: Ensure consistency throughout the file
-- **Copy-paste from documentation**: Add value by distilling and contextualizing
+```python
+from dc_logger import log_call
 
-## Testing Your Instructions
-
-Before finalizing instruction files:
-
-1. **Test with Copilot**: Try the instructions with actual prompts in VS Code
-2. **Verify Examples**: Ensure code examples are correct and run without errors
-3. **Check Glob Patterns**: Confirm `applyTo` patterns match intended files
-
-## Example Structure
-
-Here's a minimal example structure for a new instruction file:
-
-```markdown
----
-description: 'Brief description of purpose'
-applyTo: '**/*.ext'
----
-
-# Technology Name Development
-
-Brief introduction and context.
-
-## General Instructions
-
-- High-level guideline 1
-- High-level guideline 2
-
-## Best Practices
-
-- Specific practice 1
-- Specific practice 2
-
-## Code Standards
-
-### Naming Conventions
-- Rule 1
-- Rule 2
-
-### File Organization
-- Structure 1
-- Structure 2
-
-## Common Patterns
-
-### Pattern 1
-Description and example
-
-\`\`\`language
-code example
-\`\`\`
-
-### Pattern 2
-Description and example
-
-## Validation
-
-- Build command: `command to verify`
-- Linting: `command to lint`
-- Testing: `command to test`
+@log_call(action_name="process_order", include_params=True)
+async def process_order(order_id: str, customer_id: str):
+    # Automatically logs entry, exit, duration, and errors
+    return {"status": "completed"}
 ```
 
-## Maintenance
+### 5. Include Duration for Performance Tracking
 
-- Review instructions when dependencies or frameworks are updated
-- Update examples to reflect current best practices
-- Remove outdated patterns or deprecated features
-- Add new patterns as they emerge in the community
-- Keep glob patterns accurate as project structure evolves
+```python
+import time
+
+start = time.time()
+result = await operation()
+duration_ms = int((time.time() - start) * 1000)
+
+await logger.info(
+    "Operation completed",
+    action="operation_name",
+    duration_ms=duration_ms
+)
+```
+
+### 6. Sanitize Sensitive Data
+
+```python
+@log_call(
+    sensitive_params=["password", "api_key", "token"]
+)
+async def authenticate(username: str, password: str):
+    # password will be logged as "***"
+    pass
+```
+
+## Log Levels Guide
+
+| Level | When to Use |
+|-------|-------------|
+| `DEBUG` | Detailed debugging info for development |
+| `INFO` | Normal operations, general events |
+| `WARNING` | Potential issues that may need attention |
+| `ERROR` | Errors that need to be addressed |
+| `CRITICAL` | Critical failures requiring immediate action |
+
+## Configuration Patterns
+
+### Development Configuration
+
+```python
+config = ConsoleLogConfig(
+    level=LogLevel.DEBUG,
+    pretty_print=True
+)
+```
+
+### Production Configuration
+
+```python
+config = ConsoleLogConfig(
+    level=LogLevel.INFO,
+    format="json",
+    pretty_print=False
+)
+```
+
+### Console + File Logging
+
+```python
+from dc_logger import create_console_file_config
+
+config = create_console_file_config(
+    file_path="logs/app.log",
+    level=LogLevel.INFO
+)
+```
+
+### With Datadog
+
+```python
+from dc_logger import create_console_datadog_config
+
+config = create_console_datadog_config(
+    datadog_api_key="your-api-key",
+    datadog_service="my-service",
+    datadog_env="production"
+)
+```
+
+## Context Parameters
+
+All logging methods accept these context parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `action` | `str` | Action being performed |
+| `entity` | `LogEntity` | Entity being operated on |
+| `user` | `str` | User identifier |
+| `duration_ms` | `int` | Operation duration in milliseconds |
+| `http_details` | `HTTPDetails` | HTTP request/response details |
+| `multi_tenant` | `MultiTenant` | Multi-tenant context |
+| `extra` | `dict` | Additional metadata |
+| `color` | `str` | Console output color |
+
+## Error Handling Pattern
+
+```python
+entity = LogEntity(type="data", id=data_id)
+
+try:
+    await logger.info("Starting operation", entity=entity, action="process")
+    result = await process_data(data_id)
+    await logger.info("Operation completed", entity=entity, duration_ms=elapsed)
+except Exception as e:
+    await logger.error(
+        f"Operation failed: {e}",
+        entity=entity,
+        extra={"error_type": type(e).__name__}
+    )
+    raise
+```
+
+## HTTP Request Logging
+
+```python
+from dc_logger import HTTPDetails
+
+http = HTTPDetails(
+    method="POST",
+    url="/api/v1/data",
+    status_code=201,
+    response_size=1024
+)
+
+await logger.info("API request completed", http_details=http, duration_ms=250)
+```
+
+## Distributed Tracing
+
+```python
+from dc_logger import correlation_manager
+
+# Start a new trace
+request_id = correlation_manager.start_request()
+
+# Get current correlation context
+context = correlation_manager.get_current_context()
+trace_id = context["trace_id"]
+
+# Logs automatically include trace_id and span_id
+await logger.info("Processing request")
+```
+
+## Common Anti-Patterns to Avoid
+
+1. **Not closing the logger** - Always call `await logger.close()`
+2. **Logging in tight loops** - Log summaries, not every iteration
+3. **Missing await** - All logging methods are async, always await them
+4. **Over-logging** - Use appropriate log levels, don't log everything at DEBUG
+5. **Logging secrets** - Use `sensitive_params` in decorators
+
+## File Structure Reference
+
+| File | Purpose |
+|------|---------|
+| `src/dc_logger/__init__.py` | All public exports |
+| `src/dc_logger/logger.py` | DCLogger main class |
+| `src/dc_logger/decorators.py` | @log_call decorator |
+| `src/dc_logger/client/models.py` | LogEntity, HTTPDetails, etc. |
+| `src/dc_logger/client/enums.py` | LogLevel enum |
+| `src/dc_logger/configs/*.py` | Configuration classes |
+| `src/dc_logger/handlers/*.py` | Output handlers |
+
+## Additional Resources
+
+- [USAGE.md](../../USAGE.md) - Comprehensive usage guide
+- [API_REFERENCE.md](../../API_REFERENCE.md) - Complete API documentation
+- [examples/](../../examples/) - Working example scripts
+- [.ai/context.md](../../.ai/context.md) - AI agent quick reference

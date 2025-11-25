@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dc_logger"
-version = "1.1.1"
+version = "1.2.0"
 description = "A flexible logging library with support for cloud providers, multi-tenancy, and structured logging"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -40,6 +40,7 @@ dev = [
     "bandit",
     "pre-commit",
     "nbstripout",
+    "pylint",
 ]
 datadog = [
     "datadog-api-client>=2.0.0",
@@ -53,6 +54,10 @@ Homepage = "https://github.com/jaewilson07/dc_logger"
 Documentation = "https://jaewilson07.github.io/dc_logger"
 Repository = "https://github.com/jaewilson07/dc_logger"
 Issues = "https://github.com/jaewilson07/dc_logger/issues"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]

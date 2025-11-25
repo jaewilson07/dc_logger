@@ -1,10 +1,5 @@
-# Pre-commit configuration optimized to minimize virtualenv/setuptools errors
-# Uses system language where possible to avoid creating isolated environments
-
-# Global configuration
-# fail_fast: false
-# default_language_version:
-#     python: python3.11
+# Pre-commit configuration optimized for speed with ruff
+# Ruff replaces black, isort, and flake8 for linting and formatting
 
 repos:
     # General hooks
@@ -20,7 +15,7 @@ repos:
 
     # Jupyter notebook cleaning
     - repo: https://github.com/kynan/nbstripout
-      rev: 0.7.1
+      rev: 0.8.1
       hooks:
           - id: nbstripout
             files: \.ipynb$
@@ -44,17 +39,16 @@ repos:
             pass_filenames: false
 
           - id: bandit
-            name: bandit
+            name: bandit security check
             entry: python -m bandit
             language: system
             types: [python]
             args: ["-c", "pyproject.toml", "-ll"]
             files: ^src/
-            fail_fast: false
 
-    # # Type checking
+    # Type checking
     - repo: https://github.com/pre-commit/mirrors-mypy
-      rev: v1.11.2
+      rev: v1.13.0
       hooks:
           - id: mypy
             additional_dependencies: [types-requests]
@@ -65,14 +59,3 @@ repos:
                     --explicit-package-bases,
                 ]
             files: ^src/
-
-    # Testing (commented out due to import issues)
-    # - repo: local
-    #   hooks:
-    #     - id: pytest
-    #       name: pytest
-    #       entry: python -m pytest
-    #       language: system
-    #       pass_filenames: false
-    #       args: [tests/]
-    #       stages: [pre-push]

@@ -1,0 +1,391 @@
+# DC Logger Examples in YAML Format
+# Structured examples for AI agents and automated tools
+
+examples:
+  - name: "Basic Console Logging"
+    description: "Simple console logging setup with async pattern"
+    use_case: "When you need basic logging output to the console"
+    difficulty: "beginner"
+    code: |
+      import asyncio
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel
+
+      async def main():
+          # Create console logger with INFO level
+          config = ConsoleLogConfig(level=LogLevel.INFO)
+          logger = DCLogger(config, "my_app")
+          
+          # Log messages at different levels
+          await logger.info("Application started")
+          await logger.warning("This is a warning")
+          await logger.error("An error occurred")
+          
+          # Always close the logger
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Using Global Logger"
+    description: "Access the global logger instance without explicit configuration"
+    use_case: "When you want quick logging without manual setup"
+    difficulty: "beginner"
+    code: |
+      from dc_logger import get_logger
+
+      # Get global logger (auto-configured)
+      logger = get_logger("my_app")
+      
+      # Use in async context
+      async def my_function():
+          await logger.info("Using global logger")
+
+  - name: "Structured Logging with Entity"
+    description: "Log with entity context for better traceability"
+    use_case: "When logging operations on specific entities (datasets, users, etc.)"
+    difficulty: "intermediate"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel, LogEntity
+
+      async def main():
+          config = ConsoleLogConfig(level=LogLevel.INFO)
+          logger = DCLogger(config, "my_app")
+          
+          # Create entity context
+          entity = LogEntity(
+              type="dataset",
+              id="ds_12345",
+              name="Sales Data",
+              additional_info={"owner": "analytics_team"}
+          )
+          
+          # Log with entity context
+          await logger.info(
+              "Dataset processed successfully",
+              entity=entity,
+              action="process_dataset",
+              duration_ms=1500,
+              extra={"rows_processed": 10000}
+          )
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "HTTP Request Logging"
+    description: "Log HTTP request details for API monitoring"
+    use_case: "When logging API calls and responses"
+    difficulty: "intermediate"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel, HTTPDetails
+
+      async def main():
+          config = ConsoleLogConfig(level=LogLevel.INFO)
+          logger = DCLogger(config, "api_service")
+          
+          # Create HTTP details
+          http_details = HTTPDetails(
+              method="POST",
+              url="/api/v1/datasets/12345/data",
+              status_code=200,
+              response_size=4096
+          )
+          
+          # Log the API call
+          await logger.info(
+              "API request completed",
+              http_details=http_details,
+              duration_ms=250,
+              action="upload_data"
+          )
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Function Decorator"
+    description: "Automatic function logging with the log_call decorator"
+    use_case: "When you want automatic entry/exit logging for functions"
+    difficulty: "intermediate"
+    code: |
+      from dc_logger import log_call, LogLevel
+
+      @log_call(
+          action_name="process_order",
+          log_level=LogLevel.INFO,
+          include_params=True
+      )
+      async def process_order(order_id: str, customer_id: str):
+          """Process an order - automatically logged."""
+          # Function logic here
+          return {"order_id": order_id, "status": "processed"}
+
+      # Logs entry and exit automatically
+      result = await process_order("ORD-123", "CUST-456")
+
+  - name: "Console + File Logging"
+    description: "Log to both console and file simultaneously"
+    use_case: "When you need persistent logs and console visibility"
+    difficulty: "intermediate"
+    code: |
+      from dc_logger import DCLogger, create_console_file_config, LogLevel
+
+      async def main():
+          # Create multi-handler config
+          config = create_console_file_config(
+              file_path="logs/application.log",
+              level=LogLevel.INFO,
+              pretty_print=True
+          )
+          logger = DCLogger(config, "my_app")
+          
+          await logger.info("This goes to both console and file")
+          await logger.error("Errors are also captured in both")
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Correlation Tracking"
+    description: "Track requests across distributed systems"
+    use_case: "When building microservices that need request tracing"
+    difficulty: "advanced"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel, correlation_manager
+
+      async def main():
+          config = ConsoleLogConfig(level=LogLevel.INFO)
+          logger = DCLogger(config, "service_a")
+          
+          # Start a new request context
+          request_id = correlation_manager.start_request()
+          
+          # Get current correlation for passing to other services
+          context = correlation_manager.get_current_context()
+          trace_id = context["trace_id"]
+          
+          await logger.info(
+              "Processing request",
+              extra={"trace_id": trace_id, "request_id": request_id}
+          )
+          
+          # When calling another service, pass the trace_id
+          # other_service.process(trace_id=trace_id)
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Multi-Tenant Logging"
+    description: "Add tenant context to logs for SaaS applications"
+    use_case: "When building multi-tenant applications"
+    difficulty: "advanced"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel, MultiTenant
+
+      async def main():
+          config = ConsoleLogConfig(level=LogLevel.INFO)
+          logger = DCLogger(config, "saas_app")
+          
+          # Create tenant context
+          tenant = MultiTenant(
+              user_id="user123",
+              tenant_id="tenant456",
+              organization_id="org789",
+              session_id="session_abc"
+          )
+          
+          await logger.info(
+              "User action performed",
+              multi_tenant=tenant,
+              action="update_settings",
+              extra={"setting": "notifications", "value": True}
+          )
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Datadog Integration"
+    description: "Send logs to Datadog cloud service"
+    use_case: "When using Datadog for log aggregation and monitoring"
+    difficulty: "advanced"
+    code: |
+      from dc_logger import DCLogger, create_console_datadog_config, LogLevel
+
+      async def main():
+          # Create config for both console and Datadog
+          config = create_console_datadog_config(
+              datadog_api_key="your-datadog-api-key",
+              datadog_service="my-service",
+              datadog_env="production",
+              level=LogLevel.INFO
+          )
+          logger = DCLogger(config, "my_app")
+          
+          # Logs go to both console and Datadog
+          await logger.info(
+              "Production event",
+              action="user_signup",
+              extra={"user_type": "premium"}
+          )
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+  - name: "Error Handling Pattern"
+    description: "Proper error logging with context"
+    use_case: "When implementing try/catch blocks with logging"
+    difficulty: "intermediate"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel, LogEntity
+
+      async def process_data(data_id: str, logger):
+          entity = LogEntity(type="data", id=data_id)
+          
+          try:
+              await logger.info(
+                  "Starting data processing",
+                  entity=entity,
+                  action="process_data"
+              )
+              
+              # Simulate processing
+              result = await fetch_and_transform(data_id)
+              
+              await logger.info(
+                  "Data processing completed",
+                  entity=entity,
+                  action="process_data",
+                  duration_ms=1500,
+                  extra={"records": len(result)}
+              )
+              return result
+              
+          except Exception as e:
+              await logger.error(
+                  f"Data processing failed: {str(e)}",
+                  entity=entity,
+                  action="process_data",
+                  extra={
+                      "error_type": type(e).__name__,
+                      "error_message": str(e)
+                  }
+              )
+              raise
+
+  - name: "Decorator with Custom Extractors"
+    description: "Advanced decorator configuration with custom extractors"
+    use_case: "When you need custom logic for extracting log context"
+    difficulty: "advanced"
+    code: |
+      from dc_logger import log_call, LogDecoratorConfig, LogLevel
+
+      # Create advanced configuration
+      config = LogDecoratorConfig(
+          action_name="api_call",
+          level_name="http_request",
+          log_level=LogLevel.INFO,
+          include_params=True,
+          sensitive_params=["password", "api_key", "token", "secret"],
+          color="cyan"
+      )
+
+      @log_call(config=config)
+      async def make_api_call(url: str, api_key: str, data: dict):
+          """API call with sensitive param sanitization."""
+          # api_key will be logged as "***" 
+          response = await http_client.post(url, headers={"X-API-Key": api_key}, json=data)
+          return response
+
+  - name: "Console Colors"
+    description: "Use colored console output for better visibility"
+    use_case: "When you want visual differentiation of log levels"
+    difficulty: "beginner"
+    code: |
+      from dc_logger import DCLogger, ConsoleLogConfig, LogLevel
+
+      async def main():
+          config = ConsoleLogConfig(level=LogLevel.DEBUG, format="text")
+          logger = DCLogger(config, "colorful_app")
+          
+          # Default colors based on level
+          await logger.debug("Debug - green")
+          await logger.info("Info - green")
+          await logger.warning("Warning - yellow")
+          await logger.error("Error - red")
+          
+          # Custom colors
+          await logger.info("Custom blue message", color="blue")
+          await logger.info("Bold green", color="bold_green")
+          await logger.info("Magenta highlight", color="magenta")
+          
+          await logger.close()
+
+      asyncio.run(main())
+
+# Common configurations for quick reference
+configurations:
+  console_dev:
+    description: "Development console configuration"
+    code: |
+      from dc_logger import ConsoleLogConfig, LogLevel
+      config = ConsoleLogConfig(level=LogLevel.DEBUG, pretty_print=True)
+
+  console_prod:
+    description: "Production console configuration"
+    code: |
+      from dc_logger import ConsoleLogConfig, LogLevel
+      config = ConsoleLogConfig(level=LogLevel.INFO, format="json")
+
+  file_only:
+    description: "File-only logging"
+    code: |
+      from dc_logger import create_file_config, LogLevel
+      config = create_file_config(file_path="logs/app.log", level=LogLevel.INFO)
+
+  console_file:
+    description: "Console and file logging"
+    code: |
+      from dc_logger import create_console_file_config, LogLevel
+      config = create_console_file_config(
+          file_path="logs/app.log",
+          level=LogLevel.INFO,
+          pretty_print=True
+      )
+
+  datadog:
+    description: "Datadog cloud logging"
+    code: |
+      from dc_logger import create_console_datadog_config
+      config = create_console_datadog_config(
+          datadog_api_key="your-key",
+          datadog_service="my-service",
+          datadog_env="production"
+      )
+
+# Feature summary for AI agents
+features:
+  - name: "Async-first"
+    description: "All logging methods are async for non-blocking I/O"
+  
+  - name: "Multiple handlers"
+    description: "Console, file, and cloud output simultaneously"
+  
+  - name: "Structured logging"
+    description: "JSON logs with entity, action, and context fields"
+  
+  - name: "Distributed tracing"
+    description: "Built-in correlation with trace_id, span_id, request_id"
+  
+  - name: "Decorator logging"
+    description: "Automatic function entry/exit logging with @log_call"
+  
+  - name: "Multi-tenant support"
+    description: "Tenant context for SaaS applications"
+  
+  - name: "Cloud integrations"
+    description: "Datadog, AWS CloudWatch, GCP, Azure support"
+  
+  - name: "Colored output"
+    description: "ANSI colors for console visibility"
