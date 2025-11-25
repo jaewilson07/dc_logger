@@ -37,9 +37,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "mypy",
-    "black",
     "bandit",
-    "isort",
     "pre-commit",
     "nbstripout",
 ]
@@ -58,26 +56,12 @@ Issues = "https://github.com/jaewilson07/dc_logger/issues"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]  # Line too long (handled by black)
+ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-wrap-aliases = true
 split-on-trailing-comma = true
-
-[tool.black]
-line-length = 88
-target-version = ['py39']
-
-[tool.isort]
-profile = "black"
-line_length = 88
-multi_line_output = 3
-force_grid_wrap = 0
-combine_as_imports = true
-remove_redundant_aliases = true
-split_on_trailing_comma = true
-include_trailing_comma = true
 
 [tool.mypy]
 python_version = "3.9"
