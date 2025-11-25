@@ -415,10 +415,14 @@ class DCLogger:
         """
         End the current request context.
 
-        Clears the request context. Context variables will be reset on the
-        next start_request() call.
+        Note:
+            This is a placeholder method. Context variables are automatically
+            managed by the CorrelationManager and are reset when start_request()
+            is called again.
         """
-        # Clear context variables (they'll be reset on next request)
+        # Context variables are managed by CorrelationManager and will be
+        # reset automatically on the next start_request() call
+        pass
 
     async def close(self) -> None:
         """
